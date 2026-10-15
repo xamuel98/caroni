@@ -1,0 +1,20 @@
+{
+  "name": "@caroni/gh-sync",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "sync": "tsx sync.ts",
+    "sync:dry": "tsx sync.ts --dry-run",
+    "sync:project": "tsx sync.ts --project"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^20.11.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.4.0"
+  }
+}

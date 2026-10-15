@@ -1,0 +1,94 @@
+# Seed role → permission_id assignments (source of truth).
+# `permission_id` values must exist in docs/authz/permission-glossary.csv.
+# The BFF compiles `data.role_permissions` from this + the DB and pushes it to OPA.
+
+consumer:owner:
+  - home.home_dashboard.view
+  - wallet.wallet.view
+  - transfers.transfer.view
+  - transfers.transfer.create
+  - transfers.transfer.approve
+  - beneficiaries.beneficiary.view
+  - beneficiaries.beneficiary.manage
+  - kyc.kyc_profile.view
+  - kyc.kyc_profile.submit
+  - team.team_member.view
+  - team.team_member.manage
+  - team.team_invite.create
+  - profile.profile.update
+  - profile.session.view
+  - profile.session.revoke
+
+consumer:member:
+  - home.home_dashboard.view
+  - wallet.wallet.view
+  - transfers.transfer.view
+  - transfers.transfer.create
+  - beneficiaries.beneficiary.view
+  - beneficiaries.beneficiary.manage
+  - kyc.kyc_profile.view
+  - team.team_member.view
+  - profile.profile.update
+  - profile.session.view
+
+consumer:viewer:
+  - home.home_dashboard.view
+  - wallet.wallet.view
+  - transfers.transfer.view
+  - kyc.kyc_profile.view
+  - team.team_member.view
+
+ops:kyc_analyst:
+  - ops_dashboard.ops_dashboard.view
+  - ops_kyc.kyc_case.view
+  - ops_kyc.kyc_case.decide
+  - ops_kyc.kyc_case.escalate
+
+ops:support_agent:
+  - ops_dashboard.ops_dashboard.view
+  - ops_transfers.transfer.view
+  - ops_transfers.transfer.resolve
+  - ops_disputes.dispute_case.view
+  - ops_disputes.dispute_case.resolve
+
+ops:compliance_officer:
+  - ops_dashboard.ops_dashboard.view
+  - ops_holds.hold.view
+  - ops_holds.hold.manage
+  - ops_disputes.dispute_case.view
+  - ops_kyc.kyc_case.escalate
+
+ops:supervisor:
+  - ops_dashboard.ops_dashboard.view
+  - ops_transfers.transfer.view
+  - ops_transfers.transfer.resolve
+  - ops_transfers.transfer.reverse
+  - ops_kyc.kyc_case.view
+  - ops_kyc.kyc_case.decide
+  - ops_kyc.kyc_case.escalate
+  - ops_disputes.dispute_case.view
+  - ops_disputes.dispute_case.resolve
+  - ops_audit.audit_entry.view
+  - ops_audit.audit_entry.export
+
+ops:admin:
+  - ops_dashboard.ops_dashboard.view
+  - ops_staff.staff_user.view
+  - ops_staff.staff_user.create
+  - ops_staff.staff_user.update
+  - ops_staff.staff_user.deactivate
+  - ops_roles.role.view
+  - ops_roles.role.create
+  - ops_roles.role.update
+  - ops_roles.role.delete
+  - ops_roles.role_assignment.assign
+  - ops_permissions.permission.view
+  - ops_branches.branch_config.view
+  - ops_branches.branch_config.update
+
+ops:auditor:
+  - ops_dashboard.ops_dashboard.view
+  - ops_transfers.transfer.view
+  - ops_kyc.kyc_case.view
+  - ops_audit.audit_entry.view
+  - ops_audit.audit_entry.export
