@@ -7,10 +7,13 @@ export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputE
       ref={ref}
       type={type}
       className={cn(
-        'h-[34px] w-full rounded-[6px] border border-border-strong bg-surface px-3 text-sm text-text',
+        // 16px on mobile (prevents iOS zoom-on-focus), 13px from md up
+        'h-[34px] w-full rounded-[6px] border border-border-strong bg-surface px-3 text-[16px] text-text md:text-[13px]',
         'placeholder:text-text-muted',
         'transition duration-150 ease-out',
-        'focus-visible:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+        // soft focus: accent border + translucent 3px halo (no heavy outline)
+        'focus-visible:border-accent focus-visible:outline-none',
+        'focus-visible:ring-[3px] focus-visible:ring-accent/20',
         'disabled:cursor-not-allowed disabled:opacity-50',
         className,
       )}

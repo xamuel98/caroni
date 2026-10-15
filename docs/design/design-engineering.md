@@ -107,7 +107,7 @@ Implications (this changes the brief):
 | Primitives | **Radix UI** (evaluate **Base UI** as successor) | Headless a11y + `--radix-*-content-transform-origin` for origin-aware popovers |
 | Variants | **CVA** | Typed component variants without a runtime |
 | Icons | **Heroicons — solid** (`@heroicons/react/24/solid`, plus `20/solid`, `16/solid`) | Filled, confident, premium; consistent optical weight; tree-shakeable. Use 24 for primary, 20/16 for dense UI; never below 16 with solid (detail muddies) |
-| Type | **Inter** (UI/body) + **Helvetica Neue** display face — Light `300` / Regular `400` / Medium `500` (local system font) | Inter for UI; Helvetica Neue for headings & large figures; Inter tabular figures keep money/ID columns aligned; no mono |
+| Type | **Inter** (UI/body) + **Helvetica Neue** display face — Light `300` / Regular `400` / Medium `500` / Bold `700` (local system font) | Inter for UI; Helvetica Neue for headings & large figures; Inter tabular figures keep money/ID columns aligned; no mono |
 | Tables | **TanStack Table** | Ops console is table-centric (sort/filter/virtualize) |
 | Motion (default) | **CSS transitions + `@starting-style` + WAAPI** | Off-main-thread, interruptible, no bundle cost |
 | Motion (targeted) | **Motion (`motion/react`)** only for gesture/spring/drag | Springs for interruptible gestures; not for standard UI |

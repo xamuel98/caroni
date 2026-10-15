@@ -61,6 +61,16 @@
   --duration-slow: 280ms;
 }
 
+/* Control elevation — a soft inset sheen + hairline drop (mode-aware). */
+:root {
+  --shadow-control:
+    inset 0 1px 0 0 rgb(255 255 255 / 0.24), inset 0 -1px 0 0 rgb(16 16 20 / 0.05),
+    0 1px 2px 0 rgb(16 16 20 / 0.06);
+}
+
+/* ── Fonts: Helvetica Neue is the local system family — Light 300, Regular 400,
+      Medium 500, Bold 700 all resolve from the same family name. ── */
+
 /* ── DARK overrides ─────────────────────────────────────── */
 .dark {
   --color-bg: #0b0b0f;
@@ -89,6 +99,10 @@
   --color-danger-soft: #3a0d0a;
   --color-info: #60a5fa;
   --color-info-soft: #0a2540;
+
+  --shadow-control:
+    inset 0 1px 0 0 rgb(255 255 255 / 0.06), inset 0 -1px 0 0 rgb(0 0 0 / 0.28),
+    0 1px 2px 0 rgb(0 0 0 / 0.35);
 }
 
 @layer base {
@@ -111,6 +125,18 @@
   :focus-visible {
     outline: 2px solid var(--color-ring);
     outline-offset: 2px;
+  }
+  /* Kill the default browser autofill wash (the blue/yellow field when an
+     autocomplete suggestion is picked). Repaint it as our own surface. */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill,
+  select:-webkit-autofill {
+    -webkit-text-fill-color: var(--color-text);
+    -webkit-box-shadow: 0 0 0 1000px var(--color-surface) inset;
+    caret-color: var(--color-text);
+    transition: background-color 9999s ease-in-out 0s;
   }
   @media (prefers-reduced-motion: reduce) {
     :root {

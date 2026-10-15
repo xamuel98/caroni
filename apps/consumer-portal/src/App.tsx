@@ -1,3 +1,4 @@
+import { ArrowRightIcon, CheckIcon } from '@heroicons/react/24/solid';
 import { useEffect, useState } from 'react';
 import { Badge, Button, Card, Input } from '@caroni/design-system';
 
@@ -22,7 +23,7 @@ export function App() {
       <div className="mx-auto max-w-3xl space-y-8">
         <header className="flex items-center justify-between">
           <div>
-            <h1 className="font-display text-xl font-medium tracking-tight">Caroni · design tokens</h1>
+            <h1 className="font-display text-xl font-bold tracking-tight">Caroni · design tokens</h1>
             <p className="text-sm text-text-secondary">
               Brand palette · Inter + tabular figures · Emil motion rules
             </p>
@@ -44,9 +45,11 @@ export function App() {
           </div>
           <div className="tnum font-display text-3xl font-light tracking-tight">₦250,000.00</div>
           <div className="flex gap-2">
-            <Button>Approve</Button>
+            <Button startIcon={<CheckIcon className="size-4" />}>Approve</Button>
             <Button variant="secondary">Decline</Button>
-            <Button variant="ghost">View details</Button>
+            <Button variant="ghost" endIcon={<ArrowRightIcon className="size-4" />}>
+              View details
+            </Button>
           </div>
         </Card>
 
