@@ -172,9 +172,9 @@ Focus-visible rings always; keyboard-complete flows; correct roles/ARIA; `prefer
 ### 5.5 Performance
 CWV budgets (LCP<2.5s, CLS<0.1, INP<200ms); GPU-only animation; virtualize long tables; route code-splitting; no layout thrash; test on throttled CPU + slow network.
 
-### 5.6 Color system — Brand-derived (light & dark)
+### 5.6 Color system (light & dark)
 
-**Source (verified).** Taken from Brand's own tokens — its CSS (`@font-face` → **Inter**) plus a headless screenshot of the site: base **white**, text **near-black**, brand **violet-indigo `#5B54E6`** (the "M" mark and the primary button). The warm hues on their home page are a hero **photo**, not UI colour.
+**Source.** The Caroni brand palette: base **white**, text **near-black**, brand **violet-indigo `#5B54E6`** (wordmark and primary button), typeface **Inter**.
 
 **Principles**
 - **White / near-black base**, one brand accent (**violet-indigo**). Colour stays rare.
@@ -211,7 +211,7 @@ CWV budgets (LCP<2.5s, CLS<0.1, INP<200ms); GPU-only animation; virtualize long 
 | `--text-secondary` | `#55555E` | `#A8A8B4` | supporting text |
 | `--text-muted` | `#83838D` | `#73737E` | labels, meta, table headers |
 | `--text-disabled` | `#9A9AA4` | `#4A4A56` | disabled only |
-| `--accent` | `#5B54E6` | `#8B84F5` | primary action (Brand violet) |
+| `--accent` | `#5B54E6` | `#8B84F5` | primary action (brand violet) |
 | `--accent-hover` | `#4A44D2` | `#A29BF8` | hover |
 | `--accent-fg` | `#FFFFFF` | `#0B0B0F` | text/icon on accent |
 | `--accent-soft-bg` | `#EDECFD` | `#201E3A` | tinted chips/badges |

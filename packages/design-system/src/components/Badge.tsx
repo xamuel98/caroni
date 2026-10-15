@@ -8,7 +8,7 @@ import { cn } from '../lib/cn';
  * no hand-picked "soft" hex values.
  */
 export const badgeVariants = cva(
-  'inline-flex h-[23px] max-w-full items-center gap-1.5 overflow-hidden rounded-[6px] px-[7px] text-[13px] font-normal leading-none',
+  'inline-flex h-[23px] max-w-full items-center gap-1.5 overflow-hidden rounded-[6px] px-[7px] text-[13px] font-medium',
   {
     variants: {
       variant: {
@@ -26,8 +26,7 @@ export const badgeVariants = cva(
 );
 
 export interface BadgeProps
-  extends HTMLAttributes<HTMLSpanElement>,
-    VariantProps<typeof badgeVariants> {}
+  extends HTMLAttributes<HTMLSpanElement>, VariantProps<typeof badgeVariants> {}
 
 export function Badge({ className, variant, children, ...props }: BadgeProps) {
   return (
