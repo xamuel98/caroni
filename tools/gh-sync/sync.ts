@@ -107,10 +107,34 @@ function log(msg: string) {
   console.log(DRY ? `[dry] ${msg}` : msg);
 }
 
+/** Fail fast with a clear message when board.yaml is malformed. */
+function validate(def: Def) {
+  const errs: string[] = [];
+  const labelNames = new Set(def.labels.map((l) => l.name));
+  for (const c of def.cards) {
+    const where = c.key || c.name || '(unknown card)';
+    if (!def.lists.includes(c.list)) errs.push(`${where}: unknown list "${c.list}"`);
+    for (const l of c.labels ?? [])
+      if (!labelNames.has(l)) errs.push(`${where}: unknown label "${l}"`);
+    for (const f of ['summary', 'current_state', 'requirements'] as const) {
+      const v = (c as Record<string, unknown>)[f];
+      if (v !== undefined && typeof v !== 'string')
+        errs.push(`${where}: "${f}" must be a string — quote values containing ": "`);
+    }
+    for (const f of ['acceptance', 'dependencies'] as const) {
+      const v = (c as Record<string, unknown>)[f];
+      if (v !== undefined && (!Array.isArray(v) || v.some((x) => typeof x !== 'string')))
+        errs.push(`${where}: "${f}" must be a list of strings — quote items containing ": "`);
+    }
+  }
+  if (errs.length) throw new Error(`Invalid board.yaml:\n- ${errs.join('\n- ')}`);
+}
+
 async function main() {
   gh(['auth', 'status']); // throws if not logged in
 
   const def = yaml.load(readFileSync(BOARD_FILE, 'utf8')) as Def;
+  validate(def);
   const repo =
     def.repo ||
     gh(['repo', 'view', '--json', 'nameWithOwner', '-q', '.nameWithOwner']).trim();

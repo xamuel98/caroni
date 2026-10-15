@@ -509,7 +509,7 @@ cards:
     requirements: Role edit → compile role_permissions → PUT /v1/data/caroni; push on boot too.
     acceptance:
       - Editing a role changes subsequent decisions
-      - Reconciliation test: DB roles == OPA data
+      - "Reconciliation test: DB roles == OPA data"
     dependencies: [M5-1, M1-5]
 
   - key: M5-6
