@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Caroni — Brand palette (verified)</title>
+<style>
+  :root { --font: "Inter", ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif; --mono: ui-monospace, "SF Mono", Menlo, monospace; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0a0a0c; color: #e9e9ee; font-family: var(--font); padding: 40px 28px 90px; -webkit-font-smoothing: antialiased; }
+  h1 { font-size: 21px; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 6px; }
+  .sub { color: #8b8b96; font-size: 13px; margin: 0 0 30px; max-width: 82ch; line-height: 1.6; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border-radius: 18px; overflow: hidden; border: 1px solid #202027; max-width: 1120px; }
+  .half { padding: 26px; }
+  .half + .half { border-left: 1px solid #202027; }
+  .tag { font-size: 10px; text-transform: uppercase; letter-spacing: .11em; opacity: .5; margin-bottom: 16px; }
+  .swatches { display: flex; gap: 6px; margin-bottom: 20px; }
+  .sw { height: 28px; flex: 1; border-radius: 7px; border: 1px solid rgba(0,0,0,.12); }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px; }
+  .card h3 { margin: 0 0 3px; font-size: 15px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
+  .card p { margin: 0 0 14px; font-size: 12.5px; color: var(--secondary); line-height: 1.5; }
+  .money { font-family: var(--font); font-variant-numeric: tabular-nums; font-size: 24px; font-weight: 600; color: var(--text); letter-spacing: -0.02em; }
+  .money small { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .btns { display: flex; gap: 8px; margin-top: 16px; align-items: center; }
+  .btn { font-size: 12.5px; font-weight: 600; padding: 8px 14px; border-radius: 10px; border: 1px solid transparent; cursor: default; }
+  .btn.primary { background: var(--accent); color: var(--accent-fg); }
+  .btn.ghost { background: transparent; color: var(--text); border-color: var(--border-strong); }
+  .chips { display: flex; gap: 8px; margin-top: 14px; }
+  .chip { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px; }
+  .dots { display: flex; gap: 14px; margin-top: 16px; font-size: 11px; color: var(--muted); }
+  .dot { display: inline-flex; align-items: center; gap: 6px; }
+  .dot i { width: 7px; height: 7px; border-radius: 50%; }
+  .tr { display: flex; align-items: center; justify-content: space-between; padding: 10px 4px; border-bottom: 1px solid var(--border); font-size: 12.5px; color: var(--text); }
+  .tr:last-child { border-bottom: 0; }
+  .tr .amt { font-family: var(--font); font-variant-numeric: tabular-nums; color: var(--secondary); }
+</style>
+</head>
+<body>
+  <h1>Caroni × Brand (verified)</h1>
+  <p class="sub">Brand's real tokens: <b>white</b> base, <b>near-black</b> text, brand <b>violet-indigo #5B54E6</b> (the "M" + primary button), Inter typeface. Warm tones earlier were a hero <i>photo</i>. Purple is the accent; neutrals stay neutral. Font: <b>Inter</b> with tabular figures for numerals (no mono) + a touch of Helvetica Neue.</p>
+  <div class="row2" id="row"></div>
+
+<script>
+const ok="#16A34A", warn="#F59E0B", bad="#DC2626";
+
+const light = { bg:"#FFFFFF", surface:"#FFFFFF", border:"#E7E7EA", borderStrong:"#D4D4DA", text:"#111114", secondary:"#55555E", muted:"#83838D", accent:"#5B54E6", accentFg:"#FFFFFF", soft:"#EDECFD", softTx:"#4A44C8" };
+const dark  = { bg:"#0B0B0F", surface:"#121218", border:"#24242E", borderStrong:"#30303C", text:"#F4F4F7", secondary:"#A8A8B4", muted:"#73737E", accent:"#8B84F5", accentFg:"#0B0B0F", soft:"#201E3A", softTx:"#B7B1FA" };
+
+function panel(label, t) {
+  const style = `--surface:${t.surface};--border:${t.border};--border-strong:${t.borderStrong};--text:${t.text};--secondary:${t.secondary};--muted:${t.muted};--accent:${t.accent};--accent-fg:${t.accentFg};background:${t.bg}`;
+  return `<div class="half" style="${style}">
+    <div class="tag">${label}</div>
+    <div class="swatches">
+      <div class="sw" style="background:${t.bg}"></div>
+      <div class="sw" style="background:${t.surface}"></div>
+      <div class="sw" style="background:${t.border}"></div>
+      <div class="sw" style="background:${t.muted}"></div>
+      <div class="sw" style="background:${t.secondary}"></div>
+      <div class="sw" style="background:${t.text}"></div>
+      <div class="sw" style="background:${t.accent}"></div>
+    </div>
+    <div class="card">
+      <h3>Approval required</h3>
+      <p>Transfer to <b style="color:${t.text}">@ada</b> held pending KYC.</p>
+      <div class="money">₦250,000.00 <small>NGN</small></div>
+      <div class="btns">
+        <span class="btn primary">Approve</span>
+        <span class="btn ghost">Decline</span>
+      </div>
+      <div class="chips">
+        <span class="chip" style="background:${t.soft};color:${t.softTx}">Verification needed</span>
+      </div>
+    </div>
+    <div class="dots">
+      <span class="dot"><i style="background:${ok}"></i>completed</span>
+      <span class="dot"><i style="background:${warn}"></i>pending</span>
+      <span class="dot"><i style="background:${bad}"></i>failed</span>
+    </div>
+    <div style="margin-top:12px">
+      <div class="tr"><span>@samuel</span><span class="amt">−₦12,500</span></div>
+      <div class="tr"><span>@friend</span><span class="amt">+₦4,000</span></div>
+    </div>
+  </div>`;
+}
+
+document.getElementById("row").innerHTML = panel("light", light) + panel("dark", dark);
+</script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "name": "caroni",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.7.1",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "format": "prettier --write \"**/*.{ts,tsx,css,md,json}\""
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3",
+    "turbo": "^2.3.3",
+    "typescript": "^5.6.3"
+  }
+}

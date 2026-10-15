@@ -107,7 +107,7 @@ Implications (this changes the brief):
 | Primitives | **Radix UI** (evaluate **Base UI** as successor) | Headless a11y + `--radix-*-content-transform-origin` for origin-aware popovers |
 | Variants | **CVA** | Typed component variants without a runtime |
 | Icons | **Heroicons — solid** (`@heroicons/react/24/solid`, plus `20/solid`, `16/solid`) | Filled, confident, premium; consistent optical weight; tree-shakeable. Use 24 for primary, 20/16 for dense UI; never below 16 with solid (detail muddies) |
-| Type | **Inter** (UI) + **Geist Mono** or system mono (numbers/IDs) | Strong hierarchy; tabular figures for money |
+| Type | **Inter** (all UI, incl. numerals via `tabular-nums`) + **Helvetica Neue** as a sparing accent face | No mono; Inter's tabular figures keep money/ID columns aligned; Helvetica Neue adds subtle display contrast |
 | Tables | **TanStack Table** | Ops console is table-centric (sort/filter/virtualize) |
 | Motion (default) | **CSS transitions + `@starting-style` + WAAPI** | Off-main-thread, interruptible, no bundle cost |
 | Motion (targeted) | **Motion (`motion/react`)** only for gesture/spring/drag | Springs for interruptible gestures; not for standard UI |
@@ -163,7 +163,7 @@ Implications (this changes the brief):
 - **Color:** semantic tokens only — full light/dark system in **Section 5.6**. Raw hex never appears in components.
 - **Elevation:** soft layered shadows + 1px subtle borders (semi-transparent), not heavy drop shadows.
 - **Radii:** scale 6/8/10/12; consistent per element class.
-- **Numerals:** `font-variant-numeric: tabular-nums` for all money, IDs, tables.
+- **Numerals:** **Inter tabular figures** (`font-variant-numeric: tabular-nums`) for all money, IDs, and tables — no monospace face.
 - **Density:** ops console compact; consumer portal comfortable.
 
 ### 5.4 Accessibility (non-negotiable)
@@ -172,71 +172,72 @@ Focus-visible rings always; keyboard-complete flows; correct roles/ARIA; `prefer
 ### 5.5 Performance
 CWV budgets (LCP<2.5s, CLS<0.1, INP<200ms); GPU-only animation; virtualize long tables; route code-splitting; no layout thrash; test on throttled CPU + slow network.
 
-### 5.6 Color system (light & dark)
+### 5.6 Color system — Brand-derived (light & dark)
+
+**Source (verified).** Taken from Brand's own tokens — its CSS (`@font-face` → **Inter**) plus a headless screenshot of the site: base **white**, text **near-black**, brand **violet-indigo `#5B54E6`** (the "M" mark and the primary button). The warm hues on their home page are a hero **photo**, not UI colour.
 
 **Principles**
-- **Never pure `#000` / pure white** for large areas — off-black text, off-white page. Pure black/white look cheap and cause halation.
-- **Cool-neutral greys** (a faint ~4–6% blue cast) read as precise and premium — right for a fintech product. Warm/sand greys would feel softer, less "systems-grade".
-- **Borders do the work.** Separators are 1px hairlines at low contrast, not heavy shadows. This is the single biggest thing that separates crafted UI from "AI dashboard".
-- **Elevation differs by mode:** in **light**, elevation = hairline border **+ very soft, low-opacity shadow**; in **dark**, elevation = a **lighter surface** (shadows are invisible on dark).
-- **One accent** (Iris). Status colours are separate and strictly semantic — never brand a control with green/red/amber.
-- Everything is a **CSS variable**; components reference semantic tokens, never ramp steps or hex.
+- **White / near-black base**, one brand accent (**violet-indigo**). Colour stays rare.
+- Neutrals are **neutral-to-slightly-cool**, never warm/sand.
+- **Borders carry separation** — 1px hairlines; elevation = border (+ a soft, low-opacity shadow in light) and a **lighter surface** in dark (shadows are invisible on dark).
+- Status colours are **separate and strictly semantic**; never brand a control with a status hue.
+- Everything is a **CSS variable**; components reference semantic tokens, never hex.
 
-**Neutral ramp (cool slate)** — steps `0→9`; light and dark are tuned independently (not a naive inversion).
+**Neutral ramp** (steps `0→8`; light and dark tuned independently).
 
 | Step | Light | Dark | Typical role |
 |---|---|---|---|
-| 0 | `#FFFFFF` | `#0C111D` | page base |
-| 1 | `#F9FAFB` | `#101828` | surface / panel |
-| 2 | `#F2F4F7` | `#1D2939` | sunken / raised |
-| 3 | `#EAECF0` | `#344054` | border |
-| 4 | `#D0D5DD` | `#475467` | border-strong |
-| 5 | `#98A2B3` | `#667085` | text-disabled |
-| 6 | `#667085` | `#98A2B3` | text-muted |
-| 7 | `#475467` | `#D0D5DD` | text-secondary |
-| 8 | `#344054` | `#EAECF0` | text-tertiary |
-| 9 | `#101828` | `#F9FAFB` | text (primary) |
+| 0 | `#FFFFFF` | `#0B0B0F` | page base |
+| 1 | `#F6F6F8` | `#121218` | surface / sunken |
+| 2 | `#ECECEF` | `#17171F` | raised |
+| 3 | `#E1E1E5` | `#24242E` | border |
+| 4 | `#C9C9D0` | `#30303C` | border-strong |
+| 5 | `#9A9AA4` | `#4A4A56` | text-disabled |
+| 6 | `#6E6E78` | `#83838D` | text-muted |
+| 7 | `#3A3A42` | `#B6B6C0` | text-secondary |
+| 8 | `#111114` | `#F4F4F7` | text (primary) |
 
 **Semantic tokens**
 
 | Token | Light | Dark | Use |
 |---|---|---|---|
-| `--bg` | `#F9FAFB` | `#0C111D` | app background |
-| `--surface` | `#FFFFFF` | `#101828` | cards, panels |
-| `--surface-raised` | `#FFFFFF` | `#1D2939` | menus, popovers, modals (light = white + shadow) |
-| `--surface-sunken` | `#F2F4F7` | `#0C111D` | wells, insets, table stripes |
-| `--border` | `#EAECF0` | `#1D2939` | hairlines, dividers |
-| `--border-strong` | `#D0D5DD` | `#344054` | inputs, emphasis |
-| `--text` | `#101828` | `#F9FAFB` | primary text |
-| `--text-secondary` | `#475467` | `#D0D5DD` | supporting text |
-| `--text-muted` | `#667085` | `#98A2B3` | labels, meta, table headers |
-| `--text-disabled` | `#98A2B3` | `#667085` | disabled only |
-| `--accent` | `#444CE7` | `#8098F9` | primary action (Iris) |
-| `--accent-hover` | `#3538CD` | `#A4BCFD` | hover |
-| `--accent-fg` | `#FFFFFF` | `#0C111D` | text/icon on accent |
-| `--ring` | `#6172F3` | `#8098F9` | focus ring (use at ~35% alpha for the halo) |
+| `--bg` | `#FFFFFF` | `#0B0B0F` | app background |
+| `--surface` | `#FFFFFF` | `#121218` | cards, panels |
+| `--surface-raised` | `#FFFFFF` | `#17171F` | menus, popovers, modals |
+| `--surface-sunken` | `#F6F6F8` | `#0B0B0F` | wells, insets, table stripes |
+| `--border` | `#E7E7EA` | `#24242E` | hairlines, dividers |
+| `--border-strong` | `#D4D4DA` | `#30303C` | inputs, emphasis |
+| `--text` | `#111114` | `#F4F4F7` | primary text |
+| `--text-secondary` | `#55555E` | `#A8A8B4` | supporting text |
+| `--text-muted` | `#83838D` | `#73737E` | labels, meta, table headers |
+| `--text-disabled` | `#9A9AA4` | `#4A4A56` | disabled only |
+| `--accent` | `#5B54E6` | `#8B84F5` | primary action (Brand violet) |
+| `--accent-hover` | `#4A44D2` | `#A29BF8` | hover |
+| `--accent-fg` | `#FFFFFF` | `#0B0B0F` | text/icon on accent |
+| `--accent-soft-bg` | `#EDECFD` | `#201E3A` | tinted chips/badges |
+| `--accent-soft-fg` | `#4A44C8` | `#B7B1FA` | text on tinted chips |
+| `--ring` | `#5B54E6` | `#8B84F5` | focus ring (`~35%` alpha halo) |
 
 **Status (semantic, separate from brand)**
 
 | Token | Light | Dark | Subtle bg (light / dark) |
 |---|---|---|---|
-| `--success` | `#12B76A` | `#32D583` | `#ECFDF3` / `#052E1F` |
-| `--warning` | `#F79009` | `#FDB022` | `#FFFAEB` / `#3A2A05` |
-| `--danger` | `#F04438` | `#F97066` | `#FEF3F2` / `#3A0D0A` |
-| `--info` | `#2E90FA` | `#53B1FD` | `#EFF8FF` / `#0A2540` |
+| `--success` | `#16A34A` | `#4ADE80` | `#ECFDF3` / `#052E1F` |
+| `--warning` | `#D97706` | `#FBBF24` | `#FFFAEB` / `#3A2A05` |
+| `--danger` | `#DC2626` | `#F87171` | `#FEF2F2` / `#3A0D0A` |
+| `--info` | `#2563EB` | `#60A5FA` | `#EFF6FF` / `#0A2540` |
 
-**Grey usage rules (the "make it feel expensive" rules)**
-- Page bg is **`#F9FAFB` (light)** / **`#0C111D` (dark)** — *not* pure white/black.
-- Cards are `#FFFFFF` (light) sitting on the off-white page; the contrast between the two is deliberately tiny and carried by a hairline + soft shadow.
-- **Dark-mode separation** comes from surface lightening: `#0C111D → #101828 → #1D2939 → #344054`. Never rely on shadow in dark.
-- **Hover:** light = step toward `#F2F4F7`; dark = step toward `#1D2939`. Hover text/icon darkens/lightens one text step.
-- **Table headers and labels** use `--text-muted`; body uses `--text`; the muted-to-primary contrast is the main hierarchy lever.
-- **Disabled** is a state, not a colour system — use `--text-disabled` + reduced opacity, keep contrast low intentionally.
-- **Dividers** only where needed; prefer spacing over rules.
+**Usage rules (the "make it feel expensive" rules)**
+- Page bg is **`#FFFFFF` (light)** / **`#0B0B0F` (dark)**; cards are white on near-white, separated by a hairline — the contrast is deliberately tiny.
+- **Dark-mode separation** = surface lightening (`#0B0B0F → #121218 → #17171F`), never shadow.
+- **Hover:** light = step toward `#F6F6F8`; dark = step toward `#17171F`.
+- **Table headers / labels** use `--text-muted`; body uses `--text` — that gap is the main hierarchy lever.
+- **Disabled** is a state (`--text-disabled` + reduced opacity), not a colour set.
+- Dividers only where needed; prefer spacing.
 
-**Contrast targets (verify in CI with axe):** body text ≥ 7:1; secondary/muted ≥ 4.5:1; icons for active controls ≥ 3:1; focus ring ≥ 3:1 against both surface and background. If accent-on-surface dips below 4.5:1, step `--accent` to `#3F45C8` (light) / `#93A7FF` (dark).
+**Contrast targets (verify in CI with axe):** body ≥ 7:1; secondary/muted ≥ 4.5:1; active-control icons ≥ 3:1; focus ring ≥ 3:1 on both surface and background. Accent on white is `#5B54E6` (~4.9:1, AA); if a use-case needs AAA, step to `#4A44C8`.
 
-**Per-branch theming:** only `--accent`, `--accent-hover`, `--ring`, and a brand logo change per branch. **Neutrals never change** — that's what keeps every branch feeling like the same product.
+**Per-branch theming:** only `--accent`, `--accent-hover`, `--ring`, and the brand logo change per branch. **Neutrals never change** — that's what keeps every branch feeling like the same product.
 
 ---
 
@@ -297,7 +298,7 @@ A component is **done** only when:
 ---
 
 ## 9. Open Decisions (need your input)
-1. **Type:** Inter+mono (safe, fast) **vs** Geist (Vercel-like identity). Recommend **Inter** for UI + **Geist Mono** for numerals — pragmatic hybrid.
+1. **Type:** ✅ **Inter** for UI + numerals (tabular figures), with **Helvetica Neue** as a sparing accent face. No monospace.
 2. **Primitives:** **Radix** (mature, huge ecosystem) vs **Base UI** (modern successor). Recommend **Radix now**, revisit at P1.
 3. **Aesthetic reference weighting:** Stripe-trust vs Cloudflare-density vs Linear-speed. Recommend **Cloudflare density for ops, Stripe trust for consumer, Linear speed for both**.
 4. **Skills install:** OK to run `npx skills@latest add emilkowalski/skills`?

@@ -13,6 +13,9 @@ coverage/
 PRD.md
 TECH_DESIGN.md
 
+# agent skills (installed locally; reinstall with `npx skills@latest add emilkowalski/skills`)
+.agents/
+
 # logs
 *.log
 npm-debug.log*
