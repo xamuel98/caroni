@@ -5,7 +5,7 @@ export function App() {
     <div className="min-h-screen bg-bg text-text">
       <div className="mx-auto flex max-w-5xl flex-col gap-6 p-8">
         <header className="flex items-center justify-between">
-          <h1 className="text-lg font-semibold tracking-tight">Caroni · Operations</h1>
+          <h1 className="font-display text-lg font-medium tracking-tight">Caroni · Operations</h1>
           <Badge variant="accent">Maker-checker</Badge>
         </header>
         <Card>

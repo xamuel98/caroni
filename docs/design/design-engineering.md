@@ -107,7 +107,7 @@ Implications (this changes the brief):
 | Primitives | **Radix UI** (evaluate **Base UI** as successor) | Headless a11y + `--radix-*-content-transform-origin` for origin-aware popovers |
 | Variants | **CVA** | Typed component variants without a runtime |
 | Icons | **Heroicons — solid** (`@heroicons/react/24/solid`, plus `20/solid`, `16/solid`) | Filled, confident, premium; consistent optical weight; tree-shakeable. Use 24 for primary, 20/16 for dense UI; never below 16 with solid (detail muddies) |
-| Type | **Inter** (all UI, incl. numerals via `tabular-nums`) + **Helvetica Neue** as a sparing accent face | No mono; Inter's tabular figures keep money/ID columns aligned; Helvetica Neue adds subtle display contrast |
+| Type | **Inter** (UI/body) + **Helvetica Neue** display face — Light `300` / Regular `400` / Medium `500` (local system font) | Inter for UI; Helvetica Neue for headings & large figures; Inter tabular figures keep money/ID columns aligned; no mono |
 | Tables | **TanStack Table** | Ops console is table-centric (sort/filter/virtualize) |
 | Motion (default) | **CSS transitions + `@starting-style` + WAAPI** | Off-main-thread, interruptible, no bundle cost |
 | Motion (targeted) | **Motion (`motion/react`)** only for gesture/spring/drag | Springs for interruptible gestures; not for standard UI |
@@ -298,7 +298,7 @@ A component is **done** only when:
 ---
 
 ## 9. Open Decisions (need your input)
-1. **Type:** ✅ **Inter** for UI + numerals (tabular figures), with **Helvetica Neue** as a sparing accent face. No monospace.
+1. **Type:** ✅ **Inter** for UI + **Helvetica Neue** (Light/Regular/Medium) as the display face for headings and large figures. No monospace.
 2. **Primitives:** **Radix** (mature, huge ecosystem) vs **Base UI** (modern successor). Recommend **Radix now**, revisit at P1.
 3. **Aesthetic reference weighting:** Stripe-trust vs Cloudflare-density vs Linear-speed. Recommend **Cloudflare density for ops, Stripe trust for consumer, Linear speed for both**.
 4. **Skills install:** OK to run `npx skills@latest add emilkowalski/skills`?

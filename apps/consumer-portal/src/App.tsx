@@ -22,7 +22,7 @@ export function App() {
       <div className="mx-auto max-w-3xl space-y-8">
         <header className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-semibold tracking-tight">Caroni · design tokens</h1>
+            <h1 className="font-display text-xl font-medium tracking-tight">Caroni · design tokens</h1>
             <p className="text-sm text-text-secondary">
               Brand palette · Inter + tabular figures · Emil motion rules
             </p>
@@ -42,7 +42,7 @@ export function App() {
             </div>
             <Badge variant="warning">Pending</Badge>
           </div>
-          <div className="tnum text-3xl font-semibold tracking-tight">₦250,000.00</div>
+          <div className="tnum font-display text-3xl font-light tracking-tight">₦250,000.00</div>
           <div className="flex gap-2">
             <Button>Approve</Button>
             <Button variant="secondary">Decline</Button>
