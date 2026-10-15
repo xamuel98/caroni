@@ -2,12 +2,29 @@
 # `pnpm sync` (tools/gh-sync) creates/updates labels, milestones, and issues.
 # Issues are matched by `key` (embedded in the issue body as a marker) → idempotent, no dupes.
 #
-#  milestones     → GitHub milestones (epics M0–M9)
-#  labels         → GitHub labels (hex colors)
-#  cards[].list   → board Status ("Todo"/"In Progress"/"Done") when a Project is configured
-#                   via GH_PROJECT_NUMBER; otherwise applied as a `status:<list>` label.
+# ── Issue body template ───────────────────────────────────────────────────────
+# Each card renders into this structure (set `desc:` to override raw):
 #
-# Move a card between states by editing `list` here + re-syncing, or drag it on the Project board.
+#   Summary
+#   <summary>
+#
+#   Current State
+#   <current_state>
+#
+#   Requirements
+#   <requirements>
+#
+#   Acceptance Criteria
+#   - <acceptance[]>
+#
+#   Dependencies
+#   Depends on:
+#   - <dependencies[]>   (or "- None")
+#
+#  milestones   → GitHub milestones (epics M0–M9)
+#  labels       → GitHub labels (hex colors)
+#  cards[].list → board Status ("Todo"/"In Progress"/"Done") when a Project is set
+#                 (GH_PROJECT_NUMBER); otherwise applied as a `status:<list>` label.
 
 repo: ""                              # "owner/name"; blank = infer from `gh repo view`
 
@@ -44,663 +61,717 @@ labels:
   - { name: status:done,        color: "22c55e" }
 
 cards:
-  # ── M0 — Spike & Foundations ─────────────────────────────────────────────
+  # ══ M0 — Spike & Foundations ══════════════════════════════════════════════
   - key: M0-1
     name: Bootstrap monorepo (pnpm + Turborepo)
     list: To Do
     labels: [infra]
-    desc: |
-      ## Goal
-      Create the monorepo skeleton per TDD §3.
-      ## Acceptance
-      - `apps/{consumer-portal,ops-console,api}` and `packages/{design-system,shared-types,shared-config}`
-      - Turborepo pipeline: lint, typecheck, test, build
-      - `pnpm i && pnpm build` succeeds on a clean clone
+    summary: Create the monorepo skeleton (apps + packages + infra) with a shared task runner.
+    current_state: Empty repo; no workspaces.
+    requirements: pnpm workspaces + Turborepo; shared config packages; root lint/typecheck/test/build.
+    acceptance:
+      - "apps/{consumer-portal,ops-console,api} and packages/{design-system,shared-types,shared-config} exist"
+      - "Turborepo pipeline runs lint, typecheck, test, build"
+      - "`pnpm i && pnpm build` succeeds on a clean clone"
+    dependencies: []
 
   - key: M0-2
     name: docker-compose (postgres + opa + thunderid + api + apps)
     list: To Do
     labels: [infra, devops]
-    desc: |
-      ## Goal
-      One command brings the whole stack up locally (TDD §15.1).
-      ## Acceptance
-      - `docker compose up` starts postgres, opa, thunder, api, both apps
+    summary: One command brings the whole stack up locally.
+    current_state: No containers defined.
+    requirements: Compose services with healthchecks, volumes, and documented ports; seeded OPA data.
+    acceptance:
+      - "`docker compose up` starts postgres, opa, thunder, api, both apps"
       - Healthchecks pass; services reachable on documented ports
+    dependencies: [M0-1]
 
   - key: M0-3
     name: NestJS API skeleton (config + health + modules)
     list: To Do
     labels: [backend]
-    desc: |
-      ## Goal
-      API shell with env config, health endpoint, module structure.
-      ## Acceptance
-      - `/health` returns ok with dependency status
-      - Config validated from env (zod) and fails fast on missing vars
+    summary: API shell with validated env config and a health endpoint.
+    current_state: Not started.
+    requirements: Env schema (zod) that fails fast; /health reporting dependency status.
+    acceptance:
+      - "/health returns ok with dependency status"
+      - Missing env vars fail startup with a clear message
+    dependencies: [M0-1]
 
   - key: M0-4
     name: OPA container + hello-world policy + decision endpoint
     list: To Do
     labels: [authz, spike]
-    desc: |
-      ## Goal
-      Wire the BFF to OPA (TDD §6).
-      ## Acceptance
-      - OPA runs with a seed policy; `POST /v1/data/caroni/decision` responds
-      - API calls OPA and maps `allow/reasons/obligations`
+    summary: Wire the BFF to a running OPA and expose a decision endpoint.
+    current_state: Not started.
+    requirements: OPA container with a seed policy; API calls it and maps allow/reasons/obligations.
+    acceptance:
+      - "OPA serves POST /v1/data/caroni/decision"
+      - API maps the decision response into {allow, reasons, obligations}
+    dependencies: [M0-2, M0-3]
 
   - key: M0-5
     name: ThunderID OIDC app registration (staff) — SPIKE
     list: To Do
     labels: [auth, spike]
-    desc: |
-      ## Goal
-      Confirm the ThunderID integration contract (TDD §5.2).
-      ## Acceptance
-      - ThunderID runs in Docker; OIDC app `caroni-ops-console` registered
+    summary: Confirm the ThunderID integration contract end to end before building on it.
+    current_state: ThunderID unverified; image/config assumptions unchecked.
+    requirements: Run ThunderID in Docker; register the caroni-ops-console OIDC app; complete PKCE locally.
+    acceptance:
+      - ThunderID runs in Docker; OIDC app registered
       - PKCE auth-code flow completes locally; id_token validated
-      - Document any config deviations from TDD §5.2
+      - Deviations from the design captured for follow-up
+    dependencies: [M0-2]
 
   - key: M0-6
     name: Prove end-to-end (login → decision → one gated page)
     list: To Do
     labels: [spike, authz]
-    desc: |
-      ## Goal
-      The M0 exit criterion: the riskiest integration working end to end.
-      ## Acceptance
-      - Staff logs in via ThunderID, sees a page whose visibility depends on an OPA decision
-      - Denied permission hides the page; server also denies on direct call
+    summary: The riskiest integration working end to end — the milestone exit criterion.
+    current_state: Not started.
+    requirements: A page whose visibility depends on an OPA decision for the logged-in staff user.
+    acceptance:
+      - Staff logs in via ThunderID and sees a permission-gated page
+      - Denied permission hides the page AND the server denies a direct call
+    dependencies: [M0-4, M0-5]
 
   - key: M0-7
     name: shared-types (zod) + shared-config packages
     list: To Do
     labels: [backend, frontend]
-    desc: |
-      ## Goal
-      Single source of truth for API contracts (TDD §4).
-      ## Acceptance
-      - Zod schemas for session, abilities, transfer, case
-      - Both apps and API import the same types
+    summary: Single source of truth for API contracts and shared tooling config.
+    current_state: Not started.
+    requirements: Zod schemas for session, abilities, transfer, case; exported TS types; shared eslint/tsconfig/tailwind preset.
+    acceptance:
+      - Both apps and the API import the same types
+      - Contract change fails typecheck across workspaces
+    dependencies: [M0-1]
 
-  # ── M1 — Vertical slice ─────────────────────────────────────────────────
+  # ══ M1 — Vertical slice ═══════════════════════════════════════════════════
   - key: M1-1
     name: BFF session model (httpOnly cookie + CSRF)
     list: To Do
     labels: [auth, backend]
-    desc: |
-      ## Goal
-      One session model for both populations (TDD §5.1, §5.4).
-      ## Acceptance
-      - Session stored server-side; httpOnly/Secure/SameSite cookie issued
-      - Mutations require double-submit CSRF token; rotation on login
+    summary: One server-side session model shared by both populations.
+    current_state: No session layer.
+    requirements: Server-side session store; httpOnly/Secure/SameSite cookie; double-submit CSRF; rotation on login.
+    acceptance:
+      - Session cookie is httpOnly and never readable by JS
+      - Mutations require a valid CSRF token; logout revokes the session
+    dependencies: [M0-3]
 
   - key: M1-2
     name: Staff OIDC login flow (authorize/callback/token exchange)
     list: To Do
     labels: [auth, backend]
-    desc: |
-      ## Goal
-      Staff authenticate via ThunderID (TDD §5.2).
-      ## Acceptance
-      - `/api/auth/staff/login` → `/callback` sets session (surface=ops)
-      - id_token validated (iss/aud/nonce/exp)
+    summary: Staff authenticate against ThunderID via OIDC.
+    current_state: Not started.
+    requirements: login → authorize → callback; validate id_token (iss/aud/nonce/exp); create ops session.
+    acceptance:
+      - "/api/auth/staff/login → /callback sets an ops session"
+      - Invalid id_token is rejected
+    dependencies: [M0-5, M1-1]
 
   - key: M1-3
     name: Consumer passwordless login (request/verify code)
     list: To Do
     labels: [auth, backend, consumer]
-    desc: |
-      ## Goal
-      First-party consumer auth (TDD §5.3).
-      ## Acceptance
-      - request-code (rate-limited, TTL 10m) + verify-code → session (surface=consumer)
-      - Dev mode logs the code
+    summary: First-party consumer auth via email OTP (dev logger for codes).
+    current_state: Not started.
+    requirements: request-code (rate-limited, TTL 10m) + verify-code; upsert consumer; create consumer session.
+    acceptance:
+      - Code request is rate-limited and expires
+      - Valid code creates a consumer session; invalid code denied
+    dependencies: [M1-1]
 
   - key: M1-4
     name: GET /api/session + /api/session/abilities
     list: To Do
     labels: [authz, backend]
-    desc: |
-      ## Goal
-      Expose session + structured abilities (TDD §6.7, §9.3).
-      ## Acceptance
-      - Session returns user, surface, activeBranchId, branches
-      - Abilities returns catalogue entries + `grants` lookup
+    summary: Expose session identity and structured permission abilities to the UI.
+    current_state: Not started.
+    requirements: Session returns user/surface/activeBranchId/branches; abilities returns catalogue entries + grants set.
+    acceptance:
+      - Session payload matches the shared-types contract
+      - Abilities include permission_id + metadata + grants
+    dependencies: [M1-1, M0-7]
 
   - key: M1-5
     name: OPA decision service + @RequirePermission guard
     list: To Do
     labels: [authz, backend]
-    desc: |
-      ## Goal
-      Server-side enforcement on every route (TDD §6.6).
-      ## Acceptance
-      - Guard builds OPA input from session/resource
-      - 403 responses include reasons/obligations; decision written to `decision_log`
+    summary: Server-side enforcement on every route via a NestJS guard.
+    current_state: Not started.
+    requirements: Guard builds OPA input from session + resource; 403 returns reasons/obligations; decisions logged.
+    acceptance:
+      - Guarded route is allowed/denied correctly per policy
+      - Every decision writes a decision_log row
+    dependencies: [M0-4]
 
   - key: M1-6
     name: Ops console shell (router + RequireAbility)
     list: To Do
     labels: [frontend, ops]
-    desc: |
-      ## Goal
-      Frontend foundation with permission-aware routing (TDD §12).
-      ## Acceptance
-      - Sidebar filtered by abilities; unauthorized routes blocked
-      - `<Can>` / `useCan` wired to abilities
+    summary: Frontend foundation with permission-aware routing and nav.
+    current_state: Not started.
+    requirements: Sidebar filtered by abilities; RequireAbility route guard; Can/useCan wired to abilities.
+    acceptance:
+      - Unauthorized routes are blocked; nav hides unpermitted modules
+      - Actions render hidden or disabled-with-reason per capability
+    dependencies: [M1-4]
 
   - key: M1-7
     name: Deploy first gated page to Railway
     list: To Do
     labels: [devops]
-    desc: |
-      ## Goal
-      Prove deployment early.
-      ## Acceptance
-      - API + one app + postgres + opa + thunder live on Railway
+    summary: Prove deployment early with a login-gated page.
+    current_state: Not deployed.
+    requirements: Railway project with api + one app + postgres + opa + thunder; env-based config.
+    acceptance:
       - Login works against the deployed environment
+      - Secrets provided via env (none committed)
+    dependencies: [M1-2, M1-6]
 
-  # ── M2 — Transfer happy path ────────────────────────────────────────────
+  # ══ M2 — Transfer happy path ══════════════════════════════════════════════
   - key: M2-1
     name: Consumer send-to-tag flow (resolve, validate, confirm)
     list: Backlog
     labels: [frontend, consumer]
-    desc: |
-      ## Goal
-      Instant P2P happy path (TDD §7.3, §16.1).
-      ## Acceptance
-      - Enter tag → resolve recipient → amount validation → confirmation
-      - Receipt + updated balance; clear not-found/self-send states
+    summary: The instant P2P happy path — send virtual money to a recipient's tag.
+    current_state: No send flow.
+    requirements: Tag resolve → amount validation (tier limit) → confirmation → receipt; clear not-found/self-send states.
+    acceptance:
+      - Successful send shows a receipt and updates the balance
+      - Invalid/self tag blocked with a clear message
+    dependencies: [M2-2, M2-3, M1-6]
 
   - key: M2-2
     name: Tag resolution endpoint
     list: Backlog
     labels: [backend]
-    desc: |
-      ## Goal
-      Resolve a tag without leaking PII (TDD §7.3).
-      ## Acceptance
-      - `GET /api/consumer/tags/:tag` → { exists, displayName, maskedIdentifier }
-      - Reserved/format rules enforced
+    summary: Resolve a tag to a recipient without leaking PII.
+    current_state: No tag concept implemented.
+    requirements: "GET /api/consumer/tags/:tag → { exists, displayName, maskedIdentifier }; format + reserved rules."
+    acceptance:
+      - Unknown/reserved tags handled explicitly
+      - No raw PII returned for a tag lookup
+    dependencies: [M0-3]
 
   - key: M2-3
     name: Ledger schema + double-entry write + invariant test
     list: Backlog
     labels: [backend, data, test]
-    desc: |
-      ## Goal
-      Credible money model (TDD §7.1, §10).
-      ## Acceptance
-      - ledger_account/ledger_entry/transaction/transfer tables (Prisma)
-      - Transfer writes ≥2 balanced entries in one DB tx
-      - Invariant test: entries sum to zero per currency
+    summary: Credible money model using a double-entry ledger.
+    current_state: No data model.
+    requirements: ledger_account/ledger_entry/transaction/transfer tables; balanced entries written in one DB tx.
+    acceptance:
+      - Transfer writes ≥2 entries that sum to zero per currency
+      - Invariant test fails if any transaction is unbalanced
+    dependencies: [M0-3]
 
   - key: M2-4
     name: Transfer state machine
     list: Backlog
     labels: [backend]
-    desc: |
-      ## Goal
-      Model states (TDD §7.2).
-      ## Acceptance
-      - INITIATED→PROCESSING→COMPLETED; branches FAILED/HELD
-      - Illegal transitions rejected; transitions audited
+    summary: Model transfer lifecycle states and transitions.
+    current_state: Not started.
+    requirements: "INITIATED→PROCESSING→COMPLETED with branches FAILED/HELD; illegal transitions rejected; transitions audited."
+    acceptance:
+      - Happy path auto-completes near-instantly
+      - Illegal transitions are rejected and logged
+    dependencies: [M2-3]
 
   - key: M2-5
     name: Idempotency keys + correlation IDs
     list: Backlog
     labels: [backend]
-    desc: |
-      ## Goal
-      No double-send; traceability (TDD §9.1).
-      ## Acceptance
-      - Unique (key, user) constraint; replay returns stored response
-      - X-Correlation-Id propagated to logs + audit
+    summary: Prevent double-sends and enable traceability.
+    current_state: Not started.
+    requirements: Unique (key, user) constraint; replay returns the stored response; X-Correlation-Id propagated.
+    acceptance:
+      - Replayed create returns the original result, no duplicate transfer
+      - Correlation ID appears in logs + audit
+    dependencies: [M2-3]
 
   - key: M2-6
     name: Consumer transfer history + detail/timeline
     list: Backlog
     labels: [frontend, consumer]
-    desc: |
-      ## Goal
-      Browse and inspect transfers.
-      ## Acceptance
-      - Paginated list (cursor) + detail with status timeline
-      - Virtualized for large datasets
+    summary: Browse and inspect transfers.
+    current_state: Not started.
+    requirements: Cursor-paginated list; detail view with a status timeline; virtualized rows.
+    acceptance:
+      - List paginates via cursor
+      - Detail shows the full status timeline
+    dependencies: [M2-1]
 
   - key: M2-7
     name: Failure / retry / recovery UX
     list: Backlog
     labels: [frontend, consumer]
-    desc: |
-      ## Goal
-      Design the unhappy paths (PRD §5.5).
-      ## Acceptance
-      - Explicit loading/validation/failed/retry/recovery states
-      - Retry uses same idempotency key → no duplicate
+    summary: Design the unhappy paths for money movement.
+    current_state: Not started.
+    requirements: Explicit loading/validation/failed/retry/recovery states; retry reuses the same idempotency key.
+    acceptance:
+      - Failed transfer offers retry without creating a duplicate
+      - Recovery state is clear and accessible
+    dependencies: [M2-1, M2-5]
 
-  # ── M3 — KYC + tiers ────────────────────────────────────────────────────
+  # ══ M3 — KYC & tiers ══════════════════════════════════════════════════════
   - key: M3-1
     name: Consumer KYC submission flow (simulated docs)
     list: Backlog
     labels: [frontend, consumer]
-    desc: |
-      ## Goal
-      Self-service verification (TDD §7.4).
-      ## Acceptance
-      - Submit flow creates a KYC case (PENDING_REVIEW)
-      - Resumable, validated, accessible
+    summary: Self-service identity verification from the consumer surface.
+    current_state: Not started.
+    requirements: Validated, resumable submission that creates a KYC case (PENDING_REVIEW).
+    acceptance:
+      - Submission creates a case and shows a pending status
+      - Form is accessible and validates inputs
+    dependencies: [M1-6]
 
   - key: M3-2
     name: KYC case creation + routing to ops queue
     list: Backlog
     labels: [backend, ops]
-    desc: |
-      ## Goal
-      Route verification to ops (PRD §6.4).
-      ## Acceptance
-      - Case created with type=KYC, branch-scoped, priority
-      - Appears in the KYC queue
+    summary: Route verification submissions to the ops KYC queue.
+    current_state: No case model.
+    requirements: Case with type=KYC, branch-scoped, priority; listed in the queue.
+    acceptance:
+      - Submitting KYC creates a branch-scoped case
+      - Case appears in the ops KYC queue
+    dependencies: [M3-1, M0-3]
 
   - key: M3-3
     name: Ops KYC queue + case detail
     list: Backlog
     labels: [frontend, ops]
-    desc: |
-      ## Goal
-      Ops review surface.
-      ## Acceptance
-      - Queue with filters; case detail with documents + history
-      - Permission-gated by `ops_kyc.kyc_case.view`
+    summary: Ops review surface for verification cases.
+    current_state: Not started.
+    requirements: Filterable queue; case detail with documents + history; gated by ops_kyc.kyc_case.view.
+    acceptance:
+      - Queue filters by status/branch
+      - Detail shows documents and prior actions
+    dependencies: [M3-2, M1-6]
 
   - key: M3-4
     name: Ops KYC decide (approve/reject/escalate) + audit
     list: Backlog
     labels: [backend, ops, authz]
-    desc: |
-      ## Goal
-      Decision workflow (TDD §9.3).
-      ## Acceptance
-      - decide action gated by `ops_kyc.kyc_case.decide`
-      - Reason required; action written to audit + decision_log
+    summary: Decision workflow for KYC cases.
+    current_state: Not started.
+    requirements: decide action gated by ops_kyc.kyc_case.decide; reason required; written to audit + decision_log.
+    acceptance:
+      - Approve/reject/escalate each enforce permission + reason
+      - Every decision is audited
+    dependencies: [M3-3, M1-5]
 
   - key: M3-5
     name: Tier change → ABAC limit effect
     list: Backlog
     labels: [authz, backend]
-    desc: |
-      ## Goal
-      Verification drives limits (TDD §7.4).
-      ## Acceptance
-      - Approving KYC raises tier; `data.tier_limits` honored by ABAC
-      - Previously-held transfer can complete
+    summary: Verification tier drives transfer limits.
+    current_state: Not started.
+    requirements: Approving KYC raises the user's tier; ABAC honors data.tier_limits per branch.
+    acceptance:
+      - Tier upgrade immediately changes allowed limits
+      - A previously-held transfer can then complete
+    dependencies: [M3-4, M5-2]
 
   - key: M3-6
     name: Held-by-KYC-limit flow end to end
     list: Backlog
     labels: [authz, consumer, ops]
-    desc: |
-      ## Goal
-      The spine demo (PRD §9, TDD §16.1).
-      ## Acceptance
-      - Over-limit send → HELD + KYC case → approve → transfer completes
-      - Fully scripted as a demo path
+    summary: The spine demo — send over limit held, verified, then completed.
+    current_state: Not started.
+    requirements: Over-limit send → HELD + KYC case → approve → transfer completes.
+    acceptance:
+      - The full path is scripted and reproducible
+      - States and audit are consistent across surfaces
+    dependencies: [M3-5, M2-1, M3-3]
 
-  # ── M4 — Exceptions ─────────────────────────────────────────────────────
+  # ══ M4 — Exceptions ═══════════════════════════════════════════════════════
   - key: M4-1
     name: HELD/FAILED transfer states + case routing
     list: Backlog
     labels: [backend, ops]
-    desc: |
-      ## Goal
-      Exceptions become cases (PRD §6.5).
-      ## Acceptance
-      - Failed/held transfers create FAILED_TRANSFER cases
-      - Routed to the right ops queue by branch
+    summary: Abnormal transfers become cases for ops.
+    current_state: Not started.
+    requirements: Failed/held transfers create FAILED_TRANSFER cases routed to the right branch queue.
+    acceptance:
+      - A failed transfer creates a case
+      - Case routes to the correct ops queue by branch
+    dependencies: [M2-4]
 
   - key: M4-2
     name: Ops exceptions queue + resolve (retry/reverse)
     list: Backlog
     labels: [frontend, ops, backend]
-    desc: |
-      ## Goal
-      Resolve stuck transfers.
-      ## Acceptance
-      - Queue + detail; retry and reverse actions gated by permissions
-      - Ledger stays consistent after reversal
+    summary: Ops resolves stuck or failed transfers.
+    current_state: Not started.
+    requirements: Queue + detail; retry and reverse actions gated by permissions; ledger stays consistent.
+    acceptance:
+      - Retry completes a held/failed transfer
+      - Reverse produces balanced ledger entries
+    dependencies: [M4-1, M1-6]
 
   - key: M4-3
     name: Dual-control + four-eyes enforcement (PBAC)
     list: Backlog
     labels: [authz, backend]
-    desc: |
-      ## Goal
-      Two-person rule for high-impact actions (TDD §6.8).
-      ## Acceptance
-      - Above authority → obligation requires_supervisor_approval
-      - Approver ≠ original actor; enforced server-side
+    summary: Two-person rule for high-impact actions.
+    current_state: Not started.
+    requirements: Above authority → obligation requires_supervisor_approval; approver ≠ original actor; enforced server-side.
+    acceptance:
+      - Over-threshold action is blocked without a second approver
+      - Self-approval is denied
+    dependencies: [M5-3]
 
   - key: M4-4
     name: Escalation to supervisor flow
     list: Backlog
     labels: [frontend, ops, authz]
-    desc: |
-      ## Goal
-      Escalation UX.
-      ## Acceptance
-      - Agent escalates; supervisor sees it; resolves with four-eyes
-      - Analyst self-approval denied
+    summary: Escalation UX for actions beyond an agent's authority.
+    current_state: Not started.
+    requirements: Agent escalates; supervisor sees and resolves with four-eyes; analyst self-approval denied.
+    acceptance:
+      - Escalated case appears for supervisors
+      - Resolution enforces four-eyes
+    dependencies: [M4-3, M4-2]
 
   - key: M4-5
     name: Audit entries for all ops actions
     list: Backlog
     labels: [backend, ops]
-    desc: |
-      ## Goal
-      Append-only accountability (PRD §6.7).
-      ## Acceptance
-      - Every mutation writes actor/action/resource/decision/reason
-      - Visible to Auditor/Admin only
+    summary: Append-only accountability for every ops mutation.
+    current_state: Not started.
+    requirements: Write actor/action/resource/decision/reason; visible to Auditor/Admin only.
+    acceptance:
+      - Every ops mutation writes an audit row
+      - Audit is read-only and permission-gated
+    dependencies: [M1-5]
 
-  # ── M5 — Policy depth ───────────────────────────────────────────────────
+  # ══ M5 — Policy depth ═════════════════════════════════════════════════════
   - key: M5-1
     name: Rego rbac.rego finalized + opa test
     list: Backlog
     labels: [authz, test]
-    desc: |
-      ## Goal
-      RBAC locked down (TDD §6.8).
-      ## Acceptance
-      - Role→permission check against `data.role_permissions`
-      - `opa test` covers allow/deny per role
+    summary: Lock down role→permission checks.
+    current_state: Seed policy only.
+    requirements: rbac.rego checks data.role_permissions; unit tests per role.
+    acceptance:
+      - Allow/deny correct for each role
+      - opa test green
+    dependencies: [M0-4]
 
   - key: M5-2
     name: Rego abac.rego (limits/authority/branch) + tests
     list: Backlog
     labels: [authz, test]
-    desc: |
-      ## Goal
-      Attribute conditions (TDD §6.8).
-      ## Acceptance
-      - Tier limits + authority limits + branch scope enforced
-      - Unit tests per condition
+    summary: Attribute conditions on top of roles.
+    current_state: Seed policy only.
+    requirements: Enforce tier limits, authority limits, and branch scope.
+    acceptance:
+      - Each condition covered by a unit test
+      - Out-of-scope/over-limit denied
+    dependencies: [M5-1]
 
   - key: M5-3
     name: Rego pbac.rego (four-eyes/segregation/dual-control) + tests
     list: Backlog
     labels: [authz, test]
-    desc: |
-      ## Goal
-      Composed business rules (TDD §6.8).
-      ## Acceptance
-      - Four-eyes, segregation of duties, dual-control thresholds
-      - Unit tests demonstrate each rule
+    summary: Composed business rules.
+    current_state: Seed policy only.
+    requirements: Four-eyes, segregation of duties, dual-control thresholds.
+    acceptance:
+      - Each rule demonstrated by a unit test
+    dependencies: [M5-2]
 
   - key: M5-4
     name: Authorization-matrix test suite (role × attr × action)
     list: Backlog
     labels: [test, authz]
-    desc: |
-      ## Goal
-      The key proof (TDD §14).
-      ## Acceptance
-      - Table-driven test asserts decision for every role×attribute×action
-      - Runs in CI; fails the build on regression
+    summary: The key proof that the whole authorization model works.
+    current_state: Not started.
+    requirements: Table-driven suite asserting the decision for every role × attribute × action permutation.
+    acceptance:
+      - Suite covers the catalogue; runs in CI
+      - Build fails on any regression
+    dependencies: [M5-1, M5-2, M5-3]
 
   - key: M5-5
     name: OPA data push on role change
     list: Backlog
     labels: [authz, backend]
-    desc: |
-      ## Goal
-      Keep DB and OPA in sync (TDD §6.4).
-      ## Acceptance
-      - Role edit → BFF compiles + PUT /v1/data/caroni
+    summary: Keep the DB role matrix and OPA in sync.
+    current_state: Not started.
+    requirements: Role edit → compile role_permissions → PUT /v1/data/caroni; push on boot too.
+    acceptance:
+      - Editing a role changes subsequent decisions
       - Reconciliation test: DB roles == OPA data
+    dependencies: [M5-1, M1-5]
 
   - key: M5-6
     name: Super Admin role→permission matrix editor
     list: Backlog
     labels: [frontend, ops, authz]
-    desc: |
-      ## Goal
-      Manage roles in the UI (PRD §6.5).
-      ## Acceptance
-      - Assign/remove catalogue permissions to a role
-      - Changes take effect on subsequent decisions; audited
+    summary: Manage roles and their permissions from the UI.
+    current_state: Not started.
+    requirements: Assign/remove catalogue permissions to a role; changes audited and take effect immediately.
+    acceptance:
+      - Permission changes reflect in abilities + decisions
+      - Action gated by ops_roles.role.update
+    dependencies: [M5-5, M1-6]
 
-  # ── M6 — Real-time + audit ──────────────────────────────────────────────
+  # ══ M6 — Real-time & audit ════════════════════════════════════════════════
   - key: M6-1
     name: SSE stream — consumer (transfer.updated)
     list: Backlog
     labels: [backend, frontend, consumer]
-    desc: |
-      ## Goal
-      Live transfer status (TDD §11).
-      ## Acceptance
-      - Consumer subscribes; status changes push in real time
-      - Branch + permission scoped
+    summary: Live transfer status for the consumer surface.
+    current_state: Not started.
+    requirements: SSE endpoint; branch- and permission-scoped events.
+    acceptance:
+      - Status changes push without refresh
+      - Only eligible clients receive events
+    dependencies: [M2-4]
 
   - key: M6-2
     name: SSE stream — ops (case.*)
     list: Backlog
     labels: [backend, frontend, ops]
-    desc: |
-      ## Goal
-      Live queue updates.
-      ## Acceptance
-      - case.created/assigned/resolved pushed to eligible staff
-      - Queue reflects changes without refresh
+    summary: Live queue updates for ops staff.
+    current_state: Not started.
+    requirements: Push case.created/assigned/resolved to eligible staff.
+    acceptance:
+      - Queues update live
+      - Events are permission-scoped
+    dependencies: [M3-3]
 
   - key: M6-3
     name: SSE reconnect + Last-Event-ID replay + catch-up
     list: Backlog
     labels: [backend, frontend]
-    desc: |
-      ## Goal
-      Resilient streaming (TDD §11).
-      ## Acceptance
-      - Reconnect replays missed events; client catch-up fetch on gap
-      - Polling fallback if SSE unavailable
+    summary: Resilient streaming across reconnects.
+    current_state: Not started.
+    requirements: Replay missed events via Last-Event-ID; client catch-up fetch; polling fallback.
+    acceptance:
+      - Reconnect recovers missed events without duplicates
+      - Fallback works when SSE is unavailable
+    dependencies: [M6-1, M6-2]
 
   - key: M6-4
     name: Audit log UI + filters + export
     list: Backlog
     labels: [frontend, ops]
-    desc: |
-      ## Goal
-      Compliance surface (PRD §6.7).
-      ## Acceptance
-      - Filter by actor/branch/case/decision/time; paginated
-      - Export gated by `ops_audit.audit_entry.export`
+    summary: Compliance surface over the audit trail.
+    current_state: Not started.
+    requirements: Filter by actor/branch/case/decision/time; paginated; export gated by permission.
+    acceptance:
+      - Filters and pagination work
+      - Export gated by ops_audit.audit_entry.export
+    dependencies: [M4-5, M1-6]
 
-  # ── M7 — Multi-tenancy (branches) ───────────────────────────────────────
+  # ══ M7 — Multi-tenancy ════════════════════════════════════════════════════
   - key: M7-1
     name: branch_id scoping middleware + repositories
     list: Backlog
     labels: [backend, data]
-    desc: |
-      ## Goal
-      Logical tenant isolation (TDD §8).
-      ## Acceptance
-      - Active branch resolved from session; all queries branch-scoped
+    summary: Logical tenant isolation by branch.
+    current_state: Not started.
+    requirements: Resolve activeBranchId from session; scope every query; inject into repositories.
+    acceptance:
       - No query can read across branches
+      - Every tenant table carries branch_id
+    dependencies: [M0-3]
 
   - key: M7-2
     name: Branch config in OPA input + per-branch policy
     list: Backlog
     labels: [authz, backend]
-    desc: |
-      ## Goal
-      Policies differ per region (PRD §6.7).
-      ## Acceptance
-      - OPA input carries branchId; limits/thresholds resolve per branch
-      - NG vs KE demo different outcomes for the same action
+    summary: Policies differ per regional branch.
+    current_state: Not started.
+    requirements: OPA input carries branchId; limits/thresholds resolve per branch.
+    acceptance:
+      - Same action yields different outcomes for NG vs KE
+      - Branch config drives the decision
+    dependencies: [M5-2, M7-1]
 
   - key: M7-3
     name: Ops branch switcher + scoping
     list: Backlog
     labels: [frontend, ops]
-    desc: |
-      ## Goal
-      Staff scoped to their branches.
-      ## Acceptance
-      - Switch active branch → queues/config recompute
-      - Roles can differ per branch
+    summary: Staff operate within their branch(es).
+    current_state: Not started.
+    requirements: Switch active branch → queues/config recompute; roles can differ per branch.
+    acceptance:
+      - Switching branch recomputes abilities and data
+      - Cross-branch access denied
+    dependencies: [M7-1, M1-6]
 
   - key: M7-4
     name: Cross-branch isolation test suite
     list: Backlog
     labels: [test, authz]
-    desc: |
-      ## Goal
-      Zero cross-branch leakage (NFR).
-      ## Acceptance
-      - Tests assert no cross-branch reads/writes via API or OPA
-      - Runs in CI
+    summary: Prove zero cross-branch leakage.
+    current_state: Not started.
+    requirements: Tests asserting no cross-branch reads/writes via API or OPA; run in CI.
+    acceptance:
+      - Attempted cross-branch access fails in every path
+    dependencies: [M7-1, M7-2]
 
   - key: M7-5
     name: Branch admin config editor
     list: Backlog
     labels: [frontend, ops, authz]
-    desc: |
-      ## Goal
-      Tune policy per branch (PRD FR-7.6).
-      ## Acceptance
-      - Edit thresholds/currency; affects decisions in that branch only
-      - Gated by `ops_branches.branch_config.update`
+    summary: Tune policy per branch without affecting others.
+    current_state: Not started.
+    requirements: Edit thresholds/currency; affects only that branch; gated by ops_branches.branch_config.update.
+    acceptance:
+      - Config change affects only its branch
+      - Action permission-gated and audited
+    dependencies: [M7-2, M5-6]
 
-  # ── M8 — Polish + deploy ────────────────────────────────────────────────
+  # ══ M8 — Polish & deploy ══════════════════════════════════════════════════
   - key: M8-1
     name: Design system package (Radix + Tailwind + CVA) + Storybook
     list: Backlog
     labels: [design-system, frontend]
-    desc: |
-      ## Goal
-      Shared UI foundation (TDD §12.4).
-      ## Acceptance
-      - `@caroni/design-system` consumed by both apps
-      - Storybook documents components; tokens exported
+    summary: Shared, documented UI foundation for both surfaces.
+    current_state: Not started.
+    requirements: "@caroni/design-system consumed by both apps; tokens exported; Storybook docs."
+    acceptance:
+      - Both apps import the package
+      - Storybook builds with usage docs
+    dependencies: [M0-1]
 
   - key: M8-2
     name: Core components (DataTable, MoneyInput, TagInput, StatusPill, CaseTimeline)
     list: Backlog
     labels: [design-system, frontend]
-    desc: |
-      ## Goal
-      Money-grade primitives.
-      ## Acceptance
-      - Tabular numerals via Intl; accessible; tested
-      - Virtualized DataTable
+    summary: Money-grade, accessible primitives.
+    current_state: Not started.
+    requirements: Tabular numerals via Intl; accessible; virtualized DataTable; component tests.
+    acceptance:
+      - Components are tested and documented
+      - Money values render with tabular numerals
+    dependencies: [M8-1]
 
   - key: M8-3
     name: Dark mode + per-branch theming
     list: Backlog
     labels: [design-system, frontend]
-    desc: |
-      ## Goal
-      First-class theming (PRD §5.5).
-      ## Acceptance
-      - Dark mode both surfaces; token overrides per branch
-      - No hardcoded colors
+    summary: First-class theming on both surfaces.
+    current_state: Not started.
+    requirements: Dark mode + token overrides per branch; no hardcoded colors.
+    acceptance:
+      - Dark mode works across both apps
+      - Branch theme overrides tokens only
+    dependencies: [M8-1, M7-1]
 
   - key: M8-4
     name: Command palette (⌘K) in ops console
     list: Backlog
     labels: [frontend, ops]
-    desc: |
-      ## Goal
-      Power-user navigation (PRD §5.5).
-      ## Acceptance
-      - ⌘K opens palette; results filtered by abilities; keyboard-complete
+    summary: Power-user navigation in the ops console.
+    current_state: Not started.
+    requirements: ⌘K palette; results filtered by abilities; keyboard-complete.
+    acceptance:
+      - Palette only surfaces permitted destinations
+      - Fully keyboard-operable
+    dependencies: [M1-6]
 
   - key: M8-5
     name: Accessibility pass (WCAG 2.1 AA) both surfaces
     list: Backlog
     labels: [frontend, test]
-    desc: |
-      ## Goal
-      Accessible money flows (NFR-3).
-      ## Acceptance
-      - Keyboard-complete; focus management; ARIA; axe clean
-      - Screen-reader test on send + approve flows
+    summary: Make core money flows accessible.
+    current_state: Not started.
+    requirements: Keyboard-complete; focus management; ARIA; axe clean; screen-reader tested.
+    acceptance:
+      - axe reports no critical issues on core pages
+      - Send + approve flows work with a screen reader
+    dependencies: [M8-2]
 
   - key: M8-6
     name: Performance pass (Core Web Vitals + code splitting)
     list: Backlog
     labels: [frontend]
-    desc: |
-      ## Goal
-      Meet CWV targets (M-5).
-      ## Acceptance
-      - LCP < 2.5s, CLS < 0.1, INP < 200ms on key pages
-      - Route code-splitting; virtualized lists
+    summary: Meet the performance targets.
+    current_state: Not started.
+    requirements: Route code-splitting; virtualized lists; measure LCP/CLS/INP.
+    acceptance:
+      - "LCP < 2.5s, CLS < 0.1, INP < 200ms on key pages"
+    dependencies: [M8-2]
 
   - key: M8-7
     name: CI pipeline (lint/typecheck/opa test/unit/matrix/integration/e2e/build)
     list: Backlog
     labels: [devops, test]
-    desc: |
-      ## Goal
-      Automated quality gate (TDD §15.3).
-      ## Acceptance
-      - GitHub Actions runs all gates; deploy gated on green
-      - `opa test` + authorization matrix included
+    summary: Automated quality gate.
+    current_state: Not started.
+    requirements: GitHub Actions running all gates; opa test + authorization matrix included; deploy gated on green.
+    acceptance:
+      - Pipeline runs all gates on PR
+      - Merge blocked on failure
+    dependencies: [M5-4, M0-1]
 
   - key: M8-8
     name: Railway production deploy
     list: Backlog
     labels: [devops]
-    desc: |
-      ## Goal
-      Ship it (TDD §15.4).
-      ## Acceptance
-      - api + both apps + postgres + opa + thunder on Railway
-      - Migrations run on deploy; secrets via env
+    summary: Ship the full stack.
+    current_state: Not deployed.
+    requirements: api + both apps + postgres + opa + thunder; migrations on deploy; secrets via env.
+    acceptance:
+      - Full stack reachable in production
+      - Migrations run automatically; no secrets committed
+    dependencies: [M1-7, M8-7]
 
-  # ── M9 — Portfolio layer ────────────────────────────────────────────────
+  # ══ M9 — Portfolio layer ══════════════════════════════════════════════════
   - key: M9-1
     name: README (architecture diagram + scripted demo paths)
     list: Backlog
     labels: [docs]
-    desc: |
-      ## Goal
-      Convert work into interviews (PRD G5).
-      ## Acceptance
-      - Architecture diagram + RBAC→ABAC→PBAC narrative
-      - Scripted demo paths for each user story
+    summary: Convert the work into interview material.
+    current_state: No README.
+    requirements: Architecture diagram; RBAC→ABAC→PBAC narrative; scripted demo paths per user story.
+    acceptance:
+      - README explains the architecture and the authz story
+      - Each user story has a demo path
+    dependencies: [M8-8]
 
   - key: M9-2
     name: Demo video (3 min)
     list: Backlog
     labels: [docs]
-    desc: |
-      ## Goal
-      Show the product working end to end.
-      ## Acceptance
-      - Covers send→hold→KYC→approve, dual-control, branch switch
-      - Hosted (YouTube/Loom) + linked in README
+    summary: Show the product working end to end.
+    current_state: Not started.
+    requirements: Covers send→hold→KYC→approve, dual-control, branch switch; hosted + linked.
+    acceptance:
+      - Video linked from the README
+    dependencies: [M8-8]
 
   - key: M9-3
     name: Written post (RBAC→ABAC→PBAC with OPA + ThunderID)
     list: Backlog
     labels: [docs]
-    desc: |
-      ## Goal
-      Establish expertise publicly.
-      ## Acceptance
-      - Explains the three models on one flow with code
-      - Published (dev.to/blog) + linked
+    summary: Establish expertise publicly.
+    current_state: Not started.
+    requirements: Explain the three models on one flow with code; published + linked.
+    acceptance:
+      - Post published and linked from the repo
+    dependencies: [M9-1]
 
   - key: M9-4
     name: Seed demo data script (branches, users, transfers, cases)
     list: Backlog
     labels: [data, devops]
-    desc: |
-      ## Goal
-      One-command demo-ready state.
-      ## Acceptance
-      - Seeds NG/KE branches, staff/consumer users, sample transfers + cases
-      - Idempotent; safe to re-run
+    summary: One-command demo-ready state.
+    current_state: Not started.
+    requirements: Seed NG/KE branches, staff/consumer users, sample transfers + cases; idempotent.
+    acceptance:
+      - Re-running the seed is safe (no duplicates)
+      - Demo data covers every scripted path
+    dependencies: [M8-8]

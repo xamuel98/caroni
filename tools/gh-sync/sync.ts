@@ -20,7 +20,19 @@ import path from 'node:path';
 import yaml from 'js-yaml';
 import 'dotenv/config';
 
-type Card = { key: string; name: string; list: string; labels?: string[]; desc?: string };
+type Card = {
+  key: string;
+  name: string;
+  list: string;
+  labels?: string[];
+  // Structured body (rendered into the standard template). `desc` overrides all.
+  summary?: string;
+  current_state?: string;
+  requirements?: string;
+  acceptance?: string[];
+  dependencies?: string[];
+  desc?: string;
+};
 type Def = {
   repo?: string;
   lists: string[];
@@ -41,6 +53,22 @@ const PROJECT_OWNER = process.env.GH_PROJECT_OWNER;
 
 const KEY_RE = /<!--\s*caroni-key:\s*([^\s]+)\s*-->/;
 const MARKER = (k: string) => `\n\n<!-- caroni-key: ${k} -->`;
+
+/** Render a card into the standard issue body template. */
+function renderBody(card: Card): string {
+  if (card.desc) return card.desc.trimEnd();
+  const parts: string[] = [];
+  if (card.summary) parts.push(`Summary\n${card.summary.trim()}`);
+  if (card.current_state) parts.push(`Current State\n${card.current_state.trim()}`);
+  if (card.requirements) parts.push(`Requirements\n${card.requirements.trim()}`);
+  if (card.acceptance?.length)
+    parts.push(`Acceptance Criteria\n${card.acceptance.map((a) => `- ${a}`).join('\n')}`);
+  const deps = card.dependencies?.length
+    ? card.dependencies.map((d) => `- ${d}`).join('\n')
+    : '- None';
+  parts.push(`Dependencies\nDepends on:\n${deps}`);
+  return parts.join('\n\n');
+}
 const STATUS_LABEL: Record<string, string> = {
   Backlog: 'status:todo',
   'To Do': 'status:todo',
@@ -144,7 +172,7 @@ async function main() {
       const sl = STATUS_LABEL[card.list];
       if (sl) labels.push(sl);
     }
-    const body = (card.desc ?? '').trimEnd() + MARKER(card.key);
+    const body = renderBody(card) + MARKER(card.key);
 
     const args = [
       'api',
