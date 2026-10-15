@@ -3,7 +3,9 @@ import { z } from 'zod';
 /** Validated at boot — the process fails fast on a bad/missing value. */
 const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  PORT: z.coerce.number().int().positive().default(3000),
+  // Default matches the OIDC redirect URI default below (and the registered
+  // client redirect), so the shipped defaults are self-consistent.
+  PORT: z.coerce.number().int().positive().default(3100),
   DATABASE_URL: z.string().url().optional(),
   OPA_URL: z.string().url().default('http://localhost:8181'),
 

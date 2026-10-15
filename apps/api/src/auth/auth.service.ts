@@ -17,6 +17,7 @@ interface Pending {
 }
 
 const SESSION_COOKIE = 'caroni_sid';
+const OIDC_STATE_COOKIE = 'caroni_oidc';
 
 @Injectable()
 export class AuthService {
@@ -24,7 +25,12 @@ export class AuthService {
   private readonly pending = new Map<string, Pending>();
   private readonly sessions = new Map<string, Session>();
 
-  startLogin(): string {
+  /**
+   * Begin the OIDC flow. The returned `state` must also be written to a
+   * browser-bound cookie (see controller) so the callback can prove the same
+   * browser that started the flow is finishing it (login-CSRF protection).
+   */
+  startLogin(): { url: string; state: string } {
     const state = randomId(16);
     const { verifier, challenge } = createPkce();
     this.pending.set(state, { verifier, createdAt: Date.now() });
@@ -35,15 +41,16 @@ export class AuthService {
     url.searchParams.set('redirect_uri', this.env.THUNDER_REDIRECT_URI);
     url.searchParams.set('scope', this.env.THUNDER_SCOPE);
     url.searchParams.set('state', state);
+    url.searchParams.set('nonce', randomId(16));
     url.searchParams.set('code_challenge', challenge);
     url.searchParams.set('code_challenge_method', 'S256');
-    return url.toString();
+    return { url: url.toString(), state };
   }
 
   async completeLogin(code: string, state: string): Promise<Session> {
     const pend = this.pending.get(state);
     if (!pend) throw new Error('Unknown or expired state');
-    this.pending.delete(state);
+    this.pending.delete(state); // single-use
 
     const res = await fetch(`${this.env.THUNDER_ISSUER}/oauth2/token`, {
       method: 'POST',
@@ -86,8 +93,17 @@ export class AuthService {
     if (id) this.sessions.delete(id);
   }
 
-  cookieName(): string {
+  /** Browser-bound value written at login start, verified at callback. */
+  stateFromCookie(cookieHeader?: string): string | null {
+    return this.parseCookie(cookieHeader, OIDC_STATE_COOKIE);
+  }
+
+  sessionCookieName(): string {
     return SESSION_COOKIE;
+  }
+
+  stateCookieName(): string {
+    return OIDC_STATE_COOKIE;
   }
 
   private parseCookie(header: string | undefined, name: string): string | null {
