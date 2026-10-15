@@ -1,0 +1,31 @@
+name: caroni
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: caroni
+      POSTGRES_PASSWORD: caroni
+      POSTGRES_DB: caroni
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U caroni']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Policy Decision Point — RBAC/ABAC/PBAC evaluation
+  opa:
+    image: openpolicyagent/opa:latest
+    command: ['run', '--server', '--addr=0.0.0.0:8181', '/policies/caroni', '/data.json']
+    ports:
+      - '8181:8181'
+    volumes:
+      - ./opa/policies:/policies:ro
+      - ./opa/data.json:/data.json:ro
+
+volumes:
+  pgdata:
