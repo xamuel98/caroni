@@ -54,15 +54,29 @@ const PROJECT_OWNER = process.env.GH_PROJECT_OWNER;
 const KEY_RE = /<!--\s*caroni-key:\s*([^\s]+)\s*-->/;
 const MARKER = (k: string) => `\n\n<!-- caroni-key: ${k} -->`;
 
-/** Render a card into the standard issue body template. */
-function renderBody(card: Card): string {
+/** Render a card into the standard issue body template. Preserves ticked acceptance boxes. */
+function renderBody(card: Card, prevBody?: string): string {
   if (card.desc) return card.desc.trimEnd();
+
+  // Carry over "[x]" state from the existing issue body, matched by criterion text.
+  const checked = new Map<string, boolean>();
+  if (prevBody) {
+    for (const line of prevBody.split('\n')) {
+      const m = /^\s*-\s*\[([ xX])\]\s*(.+?)\s*$/.exec(line);
+      if (m) checked.set(m[2], m[1].toLowerCase() === 'x');
+    }
+  }
+
   const parts: string[] = [];
   if (card.summary) parts.push(`Summary\n${card.summary.trim()}`);
   if (card.current_state) parts.push(`Current State\n${card.current_state.trim()}`);
   if (card.requirements) parts.push(`Requirements\n${card.requirements.trim()}`);
   if (card.acceptance?.length)
-    parts.push(`Acceptance Criteria\n${card.acceptance.map((a) => `- ${a}`).join('\n')}`);
+    parts.push(
+      `Acceptance Criteria\n${card.acceptance
+        .map((a) => `- [${checked.get(a.trim()) ? 'x' : ' '}] ${a}`)
+        .join('\n')}`,
+    );
   const deps = card.dependencies?.length
     ? card.dependencies.map((d) => `- ${d}`).join('\n')
     : '- None';
@@ -155,9 +169,13 @@ async function main() {
     `repos/${repo}/issues?state=all&per_page=100`,
   ]);
   const byKey = new Map<string, number>();
+  const bodyByKey = new Map<string, string>();
   for (const it of issues) {
     const m = KEY_RE.exec(it.body || '');
-    if (m) byKey.set(m[1], it.number);
+    if (m) {
+      byKey.set(m[1], it.number);
+      bodyByKey.set(m[1], it.body || '');
+    }
   }
 
   // ── issues ────────────────────────────────────────────────────────────────
@@ -172,7 +190,8 @@ async function main() {
       const sl = STATUS_LABEL[card.list];
       if (sl) labels.push(sl);
     }
-    const body = renderBody(card) + MARKER(card.key);
+    const prevBody = byKey.has(card.key) ? bodyByKey.get(card.key) : undefined;
+    const body = renderBody(card, prevBody) + MARKER(card.key);
 
     const args = [
       'api',
