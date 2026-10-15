@@ -3,7 +3,6 @@ package caroni
 import rego.v1
 
 default allow := false
-default reasons := set()
 
 allow if {
 	rbac_ok
