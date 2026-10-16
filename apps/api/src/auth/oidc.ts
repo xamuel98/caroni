@@ -11,10 +11,3 @@ export function createPkce(): { verifier: string; challenge: string } {
   const challenge = base64url(createHash('sha256').update(verifier).digest());
   return { verifier, challenge };
 }
-
-/** Decode a JWT payload without verifying the signature (spike only). */
-export function decodeJwtPayload(token: string): Record<string, unknown> {
-  const part = token.split('.')[1] ?? '';
-  const json = Buffer.from(part.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8');
-  return JSON.parse(json) as Record<string, unknown>;
-}

@@ -1,10 +1,8 @@
 import { Module } from '@nestjs/common';
-import { AuthzController } from './authz.controller';
-import { OpaService } from './opa.service';
+import { PolicyService } from './policy.service';
 
 @Module({
-  controllers: [AuthzController],
-  providers: [OpaService],
-  exports: [OpaService],
+  providers: [PolicyService],
+  exports: [PolicyService],
 })
 export class AuthorizationModule {}

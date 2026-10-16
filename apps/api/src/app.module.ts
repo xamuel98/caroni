@@ -1,10 +1,19 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { AuthorizationModule } from './authorization/authorization.module';
+import { validateEnv } from './config/env';
+import { DatabaseModule } from './db/database.module';
 import { HealthController } from './health/health.controller';
+import { OpsKycController } from './ops/ops-kyc.controller';
 
 @Module({
-  imports: [AuthorizationModule, AuthModule],
-  controllers: [HealthController],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true, cache: true, validate: validateEnv }),
+    DatabaseModule,
+    AuthorizationModule,
+    AuthModule,
+  ],
+  controllers: [HealthController, OpsKycController],
 })
 export class AppModule {}
