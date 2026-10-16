@@ -1,38 +1,54 @@
-import { Controller, Get, Res } from '@nestjs/common';
+import { Controller, Get, Inject, Res } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import type { Response } from 'express';
-import { loadEnv } from '../config/env';
+import type { Pool } from 'pg';
+import type { Env } from '../config/env';
+import { PG_POOL } from '../db/database.module';
 
-type Dep = 'up' | 'down';
+type Dep = 'up' | 'down' | 'skipped';
 
+/**
+ * Readiness probe: 503 unless every configured dependency is reachable, so
+ * traffic isn't routed to an instance whose authorization or data path is down.
+ */
 @Controller('health')
 export class HealthController {
-  private readonly opaUrl = loadEnv().OPA_URL;
+  constructor(
+    private readonly config: ConfigService<Env, true>,
+    @Inject(PG_POOL) private readonly pool: Pool | null,
+  ) {}
 
-  /**
-   * Readiness-style check: probes required dependencies and returns 503 when
-   * any is unavailable, so monitors don't route to an instance whose
-   * authorization path can't serve requests.
-   *
-   * NOTE: Postgres is not connected yet (lands with the data layer in M1/M2);
-   * it will be added here alongside the OPA probe.
-   */
   @Get()
-  async check(@Res() res: Response) {
-    const opa = await this.probe(`${this.opaUrl}/health`);
-    const ok = opa === 'up';
+  async check(@Res() res: Response): Promise<void> {
+    const [opa, db] = await Promise.all([this.probeOpa(), this.probeDb()]);
+    const ok = opa === 'up' && db !== 'down';
     res.status(ok ? 200 : 503).json({
       status: ok ? 'ok' : 'degraded',
       service: 'caroni-api',
-      deps: { opa },
+      deps: { opa, db },
       ts: new Date().toISOString(),
     });
   }
 
+  private async probeOpa(): Promise<Dep> {
+    return this.probe(`${this.config.get('OPA_URL', { infer: true })}/health`);
+  }
+
+  private async probeDb(): Promise<Dep> {
+    if (!this.pool) return 'skipped';
+    try {
+      await this.pool.query('SELECT 1');
+      return 'up';
+    } catch {
+      return 'down';
+    }
+  }
+
   private async probe(url: string): Promise<Dep> {
     try {
-      const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 1500);
-      const res = await fetch(url, { signal: ctrl.signal });
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 1500);
+      const res = await fetch(url, { signal: controller.signal });
       clearTimeout(timer);
       return res.ok ? 'up' : 'down';
     } catch {
