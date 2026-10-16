@@ -10,6 +10,7 @@ import { AuthService } from './auth.service';
 import { OidcService } from './oidc.service';
 import { PostgresSessionStore } from './postgres-session.store';
 import { InMemorySessionStore, SESSION_STORE } from './session.store';
+import { SessionJanitor } from './session-janitor.service';
 import { SessionController } from './session.controller';
 
 @Module({
@@ -19,6 +20,7 @@ import { SessionController } from './session.controller';
     AuthService,
     OidcService,
     AuthorizationGuard,
+    SessionJanitor,
     {
       provide: SESSION_STORE,
       inject: [ConfigService, PG_POOL],

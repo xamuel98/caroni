@@ -14,7 +14,17 @@ export const PG_POOL = Symbol('PG_POOL');
       inject: [ConfigService],
       useFactory: (config: ConfigService<Env, true>): Pool | null => {
         const url = config.get('DATABASE_URL', { infer: true });
-        return url ? new Pool({ connectionString: url, max: 10 }) : null;
+        if (!url) return null;
+        return new Pool({
+          connectionString: url,
+          max: 10,
+          // Bound every acquisition and query so a stalled database can never
+          // hang a request (or a readiness probe) indefinitely.
+          connectionTimeoutMillis: 2_000,
+          idleTimeoutMillis: 30_000,
+          statement_timeout: 1_500,
+          query_timeout: 1_500,
+        });
       },
     },
   ],

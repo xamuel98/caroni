@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 
 /**
  * Integration test against a running OPA (the same policy/data the API uses).
@@ -78,8 +78,17 @@ const matrix: Case[] = [
   },
 ];
 
-describe.skipIf(!(await reachable()))('authorization matrix (OPA integration)', () => {
-  it.each(matrix)('$name', async ({ roles, action, allow }) => {
-    expect(await decide(action, roles)).toBe(allow);
+describe('authorization matrix (OPA integration)', () => {
+  let opaUp = false;
+
+  beforeAll(async () => {
+    opaUp = await reachable();
   });
+
+  for (const testCase of matrix) {
+    it(testCase.name, async (ctx) => {
+      ctx.skip(!opaUp, `OPA not reachable at ${OPA_URL}`);
+      expect(await decide(testCase.action, testCase.roles)).toBe(testCase.allow);
+    });
+  }
 });

@@ -12,18 +12,23 @@ const getKey = () => Promise.resolve(keys.publicKey);
 
 function sign(
   claims: { sub?: string; email?: string; name?: string; roles?: string[] },
-  opts: { issuer?: string; audience?: string; expiresIn?: string; nonce?: string } = {},
+  opts: {
+    issuer?: string;
+    audience?: string;
+    expiresIn?: string | null;
+    nonce?: string;
+  } = {},
 ): Promise<string> {
   const payload: Record<string, unknown> = { ...claims };
   if (opts.nonce) payload['nonce'] = opts.nonce;
-  return new SignJWT(payload)
+  let jwt = new SignJWT(payload)
     .setProtectedHeader({ alg: 'RS256' })
     .setSubject(claims.sub ?? 'user-1')
     .setIssuedAt()
     .setIssuer(opts.issuer ?? ISSUER)
-    .setAudience(opts.audience ?? AUDIENCE)
-    .setExpirationTime(opts.expiresIn ?? '5m')
-    .sign(keys.privateKey);
+    .setAudience(opts.audience ?? AUDIENCE);
+  if (opts.expiresIn !== null) jwt = jwt.setExpirationTime(opts.expiresIn ?? '5m');
+  return jwt.sign(keys.privateKey);
 }
 
 describe('verifyIdToken', () => {
@@ -80,6 +85,13 @@ describe('verifyIdToken', () => {
   it('rejects an expired token', async () => {
     // Beyond the 5s clock tolerance baked into verification.
     const token = await sign({ sub: 'user-1' }, { expiresIn: '-30s' });
+    await expect(
+      verifyIdToken(getKey, token, { issuer: ISSUER, audience: AUDIENCE }),
+    ).rejects.toBeInstanceOf(InvalidIdTokenError);
+  });
+
+  it('rejects a token with no expiration claim', async () => {
+    const token = await sign({ sub: 'user-1' }, { expiresIn: null });
     await expect(
       verifyIdToken(getKey, token, { issuer: ISSUER, audience: AUDIENCE }),
     ).rejects.toBeInstanceOf(InvalidIdTokenError);

@@ -19,6 +19,9 @@ export class InvalidIdTokenError extends DomainError {
 const ClaimsSchema = z
   .object({
     sub: z.string().min(1),
+    // Required so a misconfigured issuer can't hand us a token of unbounded
+    // lifetime (jose only checks `exp` when it is present).
+    exp: z.number(),
     email: z.string().optional(),
     name: z.string().optional(),
     roles: z.array(z.string()).optional(),
