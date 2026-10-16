@@ -25,13 +25,33 @@ export class AuthController {
 
   @Get('auth/callback')
   async callback(
-    @Query('code') code: string,
-    @Query('state') state: string,
+    @Query() query: Record<string, string>,
     @Req() req: Request,
     @Res() res: Response,
   ) {
+    const { code, state, error, error_description: errorDescription } = query;
+
+    if (error) {
+      // eslint-disable-next-line no-console
+      console.warn('[auth/callback] provider error: %s %s', error, errorDescription ?? '');
+      res
+        .status(400)
+        .type('html')
+        .send(
+          errorHtml(`ThunderID: ${error}${errorDescription ? ` — ${errorDescription}` : ''}`),
+        );
+      return;
+    }
+
     const boundState = this.auth.stateFromCookie(req.headers.cookie);
     if (!code || !state || !boundState || boundState !== state) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        '[auth/callback] reject: hasCookie=%s hasCode=%s hasState=%s',
+        Boolean(req.headers.cookie),
+        Boolean(code),
+        Boolean(state),
+      );
       res.status(400).type('html').send(errorHtml('Invalid or mismatched sign-in state'));
       return;
     }
@@ -60,7 +80,8 @@ export class AuthController {
   logout(@Req() req: Request, @Res() res: Response) {
     this.auth.destroy(req.headers.cookie);
     res.setHeader('Set-Cookie', `${this.auth.sessionCookieName()}=; HttpOnly; Path=/; Max-Age=0`);
-    res.json({ ok: true });
+    // Redirect back so the form POST doesn't render a bare JSON body.
+    res.redirect('/demo');
   }
 
   /**
