@@ -30,7 +30,13 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../Too
 
 function FilterIcon({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 20 20" fill="currentColor" focusable="false" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      focusable="false"
+      aria-hidden="true"
+      className={className}
+    >
       <path d="M3 6a.75.75 0 0 1 .75-.75h12.5a.75.75 0 0 1 0 1.5h-12.5a.75.75 0 0 1-.75-.75Z" />
       <path d="M6.75 14a.75.75 0 0 1 .75-.75h5a.75.75 0 0 1 0 1.5h-5a.75.75 0 0 1-.75-.75Z" />
       <path d="M5.5 9.25a.75.75 0 0 0 0 1.5h9a.75.75 0 0 0 0-1.5h-9Z" />
@@ -103,7 +109,12 @@ export function isValidValue<T>(def: DataTableFilterDef<T>, value: unknown): boo
     case 'boolean':
       return typeof value === 'boolean';
     case 'numberRange':
-      return Array.isArray(value) && value.length === 2 && typeof value[0] === 'number' && typeof value[1] === 'number';
+      return (
+        Array.isArray(value) &&
+        value.length === 2 &&
+        typeof value[0] === 'number' &&
+        typeof value[1] === 'number'
+      );
     case 'date':
       return typeof value === 'string' && value.length > 0;
     default:
@@ -175,7 +186,9 @@ function FilterEditor<T>({
                 checked={vals.includes(option.value)}
                 disabled={option.disabled}
                 onCheckedChange={(checked) =>
-                  onChange(checked ? [...vals, option.value] : vals.filter((v) => v !== option.value))
+                  onChange(
+                    checked ? [...vals, option.value] : vals.filter((v) => v !== option.value),
+                  )
                 }
               />
               <span className="min-w-0 truncate">{option.label}</span>
@@ -249,7 +262,13 @@ function FilterEditor<T>({
               className="h-8"
             />
           </div>
-          <Slider min={def.min} max={def.max} step={def.step} value={range} onValueChange={(v) => onChange(v)} />
+          <Slider
+            min={def.min}
+            max={def.max}
+            step={def.step}
+            value={range}
+            onValueChange={(v) => onChange(v)}
+          />
         </div>
       );
       break;
@@ -596,7 +615,12 @@ export function DataTableToolbar<T>({
     }
     timer.current = window.setTimeout(() => onSearch(value), searchDebounce);
   };
-  useEffect(() => () => { if (timer.current !== null) window.clearTimeout(timer.current); }, []);
+  useEffect(
+    () => () => {
+      if (timer.current !== null) window.clearTimeout(timer.current);
+    },
+    [],
+  );
 
   const byField = useMemo(() => new Map(filters.map((f) => [f.field, f])), [filters]);
 
@@ -612,125 +636,134 @@ export function DataTableToolbar<T>({
 
   return (
     <TooltipProvider delayDuration={400}>
-    <div className="border-b border-border bg-surface">
-      {expanded ? (
-        <div className="animate-dt-expand space-y-2.5 p-3 motion-reduce:animate-none">
-          <div className="flex items-center gap-2">
-            <span className="min-w-0 flex-1">
-              <InputText
-                autoFocus
-                value={text}
-                placeholder={searchConfig?.placeholder ?? 'Searching in all'}
-                startIcon={<MagnifyingGlassIcon />}
-                className="h-8 border-transparent bg-surface-sunken/60 transition-colors duration-150 ease-out hover:bg-surface-sunken"
-                endIcon={
-                  text ? (
-                    <button
-                      type="button"
-                      aria-label="Clear search"
-                      onClick={() => {
-                        setText('');
-                        onSearch('');
-                      }}
-                      className="grid size-4 place-items-center rounded-full text-text-muted hover:text-text"
-                    >
-                      <XMarkIcon className="size-4" />
-                    </button>
-                  ) : undefined
-                }
-                onChange={(event) => {
-                  setText(event.target.value);
-                  schedule(event.target.value);
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
-                    if (timer.current !== null) window.clearTimeout(timer.current);
-                    onSearch(text);
-                  } else if (event.key === 'Escape' && text) {
-                    event.preventDefault();
-                    setText('');
-                    onSearch('');
+      <div className="border-b border-border bg-surface">
+        {expanded ? (
+          <div className="animate-dt-expand space-y-2.5 py-3 motion-reduce:animate-none">
+            <div className="flex items-center gap-2 px-3">
+              <span className="min-w-0 flex-1">
+                <InputText
+                  autoFocus
+                  value={text}
+                  placeholder={searchConfig?.placeholder ?? 'Searching in all'}
+                  startIcon={<MagnifyingGlassIcon />}
+                  className="h-8 border-transparent bg-surface-sunken/60 transition-colors duration-150 ease-out hover:bg-surface-sunken"
+                  endIcon={
+                    text ? (
+                      <button
+                        type="button"
+                        aria-label="Clear search"
+                        onClick={() => {
+                          setText('');
+                          onSearch('');
+                        }}
+                        className="grid size-4 place-items-center rounded-full text-text-muted hover:text-text"
+                      >
+                        <XMarkIcon className="size-4" />
+                      </button>
+                    ) : undefined
                   }
-                }}
-              />
-            </span>
-            <Button size="sm" variant="secondary" onClick={() => setExpanded(false)}>
-              Done
-            </Button>
-            <SortButton fields={sortFields} field={sortField} order={sortOrder} onChange={onSort} />
-          </div>
-
-          <Separator />
-
-          {filters.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2">
-            {conditions.map((condition) => {
-              const def = byField.get(condition.field);
-              if (!def) return null;
-              return (
-                <FilterChip
-                  key={condition.id}
-                  def={def}
-                  condition={condition}
-                  open={editingId === condition.id}
-                  onOpenChange={(open) => {
-                    if (!open && !isValidValue(def, condition.value) && Date.now() - recentAdd.current > 400) {
-                      onRemoveCondition(condition.id);
+                  onChange={(event) => {
+                    setText(event.target.value);
+                    schedule(event.target.value);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      if (timer.current !== null) window.clearTimeout(timer.current);
+                      onSearch(text);
+                    } else if (event.key === 'Escape' && text) {
+                      event.preventDefault();
+                      setText('');
+                      onSearch('');
                     }
-                    setEditingId(open ? condition.id : null);
                   }}
-                  onChange={(value) => onUpdateCondition(condition.id, value)}
-                  onRemove={() => {
-                    onRemoveCondition(condition.id);
-                    if (editingId === condition.id) setEditingId(null);
-                  }}
-                  suppressOutside={() => Date.now() - recentAdd.current < 400}
                 />
-              );
-            })}
-
-            <AddFilterButton
-              available={available}
-              disabled={available.length === 0}
-              onAdd={(def) => {
-                const id = `${def.field}-${idCounter.current++}`;
-                onAddCondition(def, id);
-                recentAdd.current = Date.now();
-                setEditingId(id);
-              }}
-            />
-
-            {conditions.length > 0 && (
-              <Button variant="monochrome" size="xs" onClick={onClearAll}>
-                Clear all
+              </span>
+              <Button size="sm" variant="secondary" onClick={() => setExpanded(false)}>
+                Done
               </Button>
+              <SortButton
+                fields={sortFields}
+                field={sortField}
+                order={sortOrder}
+                onChange={onSort}
+              />
+            </div>
+
+            <Separator />
+
+            {filters.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 px-3">
+                {conditions.map((condition) => {
+                  const def = byField.get(condition.field);
+                  if (!def) return null;
+                  return (
+                    <FilterChip
+                      key={condition.id}
+                      def={def}
+                      condition={condition}
+                      open={editingId === condition.id}
+                      onOpenChange={(open) => {
+                        if (
+                          !open &&
+                          !isValidValue(def, condition.value) &&
+                          Date.now() - recentAdd.current > 400
+                        ) {
+                          onRemoveCondition(condition.id);
+                        }
+                        setEditingId(open ? condition.id : null);
+                      }}
+                      onChange={(value) => onUpdateCondition(condition.id, value)}
+                      onRemove={() => {
+                        onRemoveCondition(condition.id);
+                        if (editingId === condition.id) setEditingId(null);
+                      }}
+                      suppressOutside={() => Date.now() - recentAdd.current < 400}
+                    />
+                  );
+                })}
+
+                <AddFilterButton
+                  available={available}
+                  disabled={available.length === 0}
+                  onAdd={(def) => {
+                    const id = `${def.field}-${idCounter.current++}`;
+                    onAddCondition(def, id);
+                    recentAdd.current = Date.now();
+                    setEditingId(id);
+                  }}
+                />
+
+                {conditions.length > 0 && (
+                  <Button variant="monochrome" size="xs" onClick={onClearAll}>
+                    Clear all
+                  </Button>
+                )}
+              </div>
             )}
           </div>
-          )}
-        </div>
-      ) : (
-        <div className="flex items-center justify-end gap-2 px-3 py-2">
-          <HoverTooltip label="Search and filter (F)">
-            <Button
-              size="xs"
-              variant="secondary"
-              aria-label="Search and filter"
-              className="relative gap-2.5"
-              onClick={() => setExpanded(true)}
-            >
-              <MagnifyingGlassIcon className="size-4" />
-              <FilterIcon className="size-4" />
-              {activeCount > 0 && (
-                <span className="absolute -right-1 -top-1 grid size-4 place-items-center rounded-full bg-accent text-[10px] font-medium text-accent-fg">
-                  {activeCount}
-                </span>
-              )}
-            </Button>
-          </HoverTooltip>
-          <SortButton fields={sortFields} field={sortField} order={sortOrder} onChange={onSort} />
-        </div>
-      )}
-    </div>
+        ) : (
+          <div className="flex items-center justify-end gap-2 px-3 py-2">
+            <HoverTooltip label="Search and filter (F)">
+              <Button
+                size="xs"
+                variant="secondary"
+                aria-label="Search and filter"
+                className="relative gap-2.5"
+                onClick={() => setExpanded(true)}
+              >
+                <MagnifyingGlassIcon className="size-4" />
+                <FilterIcon className="size-4" />
+                {activeCount > 0 && (
+                  <span className="absolute -right-1 -top-1 grid size-4 place-items-center rounded-full bg-accent text-[10px] font-medium text-accent-fg">
+                    {activeCount}
+                  </span>
+                )}
+              </Button>
+            </HoverTooltip>
+            <SortButton fields={sortFields} field={sortField} order={sortOrder} onChange={onSort} />
+          </div>
+        )}
+      </div>
     </TooltipProvider>
   );
 }
