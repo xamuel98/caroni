@@ -1,0 +1,50 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Foundations/Motion" />
+
+# Motion
+
+Every primitive animates from the same tiny token set. The rules (from the
+design-engineering strategy) are: **frequency decides whether it animates at
+all**, motion is **purposeful**, and the UI **stays under 300ms**.
+
+## Tokens
+
+| Token | Value | Use |
+| --- | --- | --- |
+| `--duration-press` | `130ms` | Button press feedback |
+| `--duration-fast` | `160ms` | Micro-interactions, tooltips, exits |
+| `--duration-base` | `200ms` | Dropdowns, popovers, selects |
+| `--duration-slow` | `280ms` | Modals, toasts |
+| `--ease-out` | `cubic-bezier(0.23, 1, 0.32, 1)` | Enter / exit |
+| `--ease-in-out` | `cubic-bezier(0.77, 0, 0.175, 1)` | On-screen movement |
+
+## Applied matrix
+
+| Component | Motion | Origin | Duration |
+| --- | --- | --- | --- |
+| Dialog | fade + `scale(0.98)` | viewport centre | `--duration-slow` |
+| Dialog → sheet (≤640px) | Vaul slide-up + drag-to-dismiss | bottom edge | `--ease-drawer` |
+| Dropdown / submenu | fade + `scale(0.96)` | trigger | `--duration-base` |
+| Popover | fade + `scale(0.97)` | trigger | `--duration-base` |
+| Tooltip | fade + `scale(0.97)`, **instant** once one is open | trigger | `--duration-fast` |
+| Tabs | sliding indicator, `clip-path` reveal | list | `--duration-base` |
+| Toast | `translateY` + opacity, same edge in/out (transition) | bottom edge | `--duration-base` |
+
+## Rules baked in
+
+- **GPU only** — animation touches `transform`, `opacity`, or a compositor
+  `clip-path`; never height, margin, or top/left. The Tabs indicator reveals a
+  full-width pill with `clip-path` insets rather than animating `width`.
+- **Interruptible where it matters** — popovers, menus, tooltips and toasts
+  can be re-triggered mid-flight, so toasts use a transitioning root with
+  `@starting-style` (retargets from the current state) instead of keyframes.
+- **Origin-aware** — popovers, menus and tooltips set `transform-origin` from
+  Radix's `--radix-*-content-transform-origin`, so they scale out of the
+  trigger. Dialogs stay centred.
+- **Never `scale(0)`** — entrances start at `0.96`–`0.98` with opacity.
+- **Reduced motion** — `prefers-reduced-motion` keeps the opacity fade but
+  drops the movement (`--dds-pop-scale: 1`, `--dds-toast-shift: 0px`) and
+  shortens durations.
+- **Keyboard-first is exempt** — the ⌘K palette and keyboard navigation do not
+  animate.

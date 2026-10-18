@@ -9,6 +9,8 @@
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
+    "storybook": "turbo run storybook",
+    "build-storybook": "turbo run build-storybook",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "lint": "turbo run lint",

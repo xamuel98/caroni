@@ -33,6 +33,13 @@
   --color-accent-soft-fg: #4a44c8;
   --color-ring: #5b54e6;
 
+  /* ── Derived shades (color-mix, no opacity) ───────────── */
+  /* Text-button hover: a slightly darker shade of the base colour. */
+  --color-plain-hover: color-mix(in oklab, var(--color-accent) 85%, black);
+  --color-plain-danger-hover: color-mix(in oklab, var(--color-danger) 85%, black);
+  --color-plain-mono-hover: color-mix(in oklab, var(--color-text) 82%, black);
+
+
   /* ── Status ───────────────────────────────────────────── */
   --color-success: #16a34a;
   --color-success-soft: #ecfdf3;
@@ -43,11 +50,10 @@
   --color-info: #2563eb;
   --color-info-soft: #eff6ff;
 
-  /* ── Radius ───────────────────────────────────────────── */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 18px;
+  /* ── Radius (3 tiers: control / panel / surface) ──────── */
+  --radius-sm: 6px; /* controls: button, input, badge, tab, tooltip */
+  --radius-md: 10px; /* panels: menu, popover, toast */
+  --radius-lg: 12px; /* surfaces: dialog, card */
 
   /* ── Motion (Emil Kowalski rules) ─────────────────────── */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
@@ -59,11 +65,454 @@
   --duration-slow: 280ms;
 }
 
+/*
+ * Enter/exit motion for overlays, menus, popovers and tooltips.
+ * GPU-only (transform + opacity), UI stays < 300ms, and every duration/ease
+ * resolves from the motion tokens above — so the prefers-reduced-motion
+ * overrides below flow through automatically.
+ *
+ * Popovers/menus/tooltips set `transform-origin` from the Radix trigger var
+ * (see components). Dialogs stay centered. Radix keeps a node mounted until
+ * its exit `animationend`, which is why these are keyframes, not transitions.
+ */
+@theme {
+  --animate-overlay-in: overlay-in var(--duration-base) var(--ease-out);
+  --animate-overlay-out: overlay-out var(--duration-fast) var(--ease-out);
+
+  --animate-dialog-in: dialog-in var(--duration-slow) var(--ease-out);
+  --animate-dialog-out: dialog-out var(--duration-fast) var(--ease-out);
+
+  --animate-menu-in: menu-in var(--duration-base) var(--ease-out);
+  --animate-menu-out: menu-out var(--duration-fast) var(--ease-out);
+
+  --animate-pop-in: pop-in var(--duration-base) var(--ease-out);
+  --animate-pop-out: pop-out var(--duration-fast) var(--ease-out);
+
+  --animate-tooltip-in: tooltip-in var(--duration-fast) var(--ease-out);
+  --animate-tooltip-out: tooltip-out var(--duration-press) var(--ease-out);
+
+  @keyframes overlay-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes overlay-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+
+  /* Dialogs are centred by a layout wrapper, not by a transform, so the
+     keyframes only scale + fade (a `transform` here would stack on top of
+     Tailwind's `translate:` property and make the dialog jump). */
+  @keyframes dialog-in {
+    from { opacity: 0; transform: scale(var(--dds-pop-scale, 0.98)); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @keyframes dialog-out {
+    from { opacity: 1; transform: scale(1); }
+    to { opacity: 0; transform: scale(var(--dds-pop-scale, 0.98)); }
+  }
+
+  @keyframes menu-in {
+    from { opacity: 0; transform: scale(var(--dds-pop-scale, 0.96)); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @keyframes menu-out {
+    from { opacity: 1; transform: scale(1); }
+    to { opacity: 0; transform: scale(var(--dds-pop-scale, 0.96)); }
+  }
+
+  @keyframes pop-in {
+    from { opacity: 0; transform: scale(var(--dds-pop-scale, 0.97)); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @keyframes pop-out {
+    from { opacity: 1; transform: scale(1); }
+    to { opacity: 0; transform: scale(var(--dds-pop-scale, 0.97)); }
+  }
+
+  @keyframes tooltip-in {
+    from { opacity: 0; transform: scale(var(--dds-pop-scale, 0.97)); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @keyframes tooltip-out {
+    from { opacity: 1; transform: scale(1); }
+    to { opacity: 0; transform: scale(var(--dds-pop-scale, 0.97)); }
+  }
+
+  /* Drawer / side sheet — slides in from its edge (direction via data-side). */
+  --animate-drawer-in: drawer-in var(--duration-slow) var(--ease-out);
+  --animate-drawer-out: drawer-out var(--duration-fast) var(--ease-out);
+  @keyframes drawer-in {
+    from { transform: translate(var(--dds-drawer-x, 0px), var(--dds-drawer-y, 0px)); }
+    to { transform: translate(0, 0); }
+  }
+  @keyframes drawer-out {
+    from { transform: translate(0, 0); }
+    to { transform: translate(var(--dds-drawer-x, 0px), var(--dds-drawer-y, 0px)); }
+  }
+
+  /* Status indicator — diagonal slide + spring pop-in (back-out overshoot). */
+  --animate-indicator-pop: indicator-pop var(--duration-slow) cubic-bezier(0.34, 1.56, 0.64, 1);
+  @keyframes indicator-pop {
+    from {
+      opacity: 0;
+      transform: translate(
+          calc(var(--dds-ind-shift, 30%) * var(--dds-ind-dir-x, 1)),
+          calc(var(--dds-ind-shift, 30%) * var(--dds-ind-dir-y, 1))
+        )
+        scale(var(--dds-ind-scale, 0.5));
+    }
+    to {
+      opacity: 1;
+      transform: translate(0, 0) scale(1);
+    }
+  }
+
+  /* Checkbox tick draws along its path; radio dot pops in. */
+  --animate-tick: checkbox-tick 200ms var(--ease-out) both;
+  @keyframes checkbox-tick {
+    from { stroke-dashoffset: 14; }
+    to { stroke-dashoffset: 0; }
+  }
+  --animate-radio-pop: radio-pop 200ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  @keyframes radio-pop {
+    from { opacity: 0; transform: scale(0.4); }
+    to { opacity: 1; transform: scale(1); }
+  }
+}
+
+/*
+ * Toasts are added and dismissed rapidly, so they use transitions (which
+ * retarget from their current state) rather than keyframes (which restart).
+ * The Radix Toast root is kept mounted through its exit by the component;
+ * `@starting-style` supplies the enter-from state.
+ */
+@layer components {
+  .c-toast {
+    transition:
+      opacity var(--duration-base) var(--ease-out),
+      transform var(--duration-base) var(--ease-out);
+    will-change: transform, opacity;
+  }
+  .c-toast[data-state='open'] {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  .c-toast[data-state='closed'] {
+    opacity: 0;
+    transform: translate3d(
+      0,
+      calc(var(--dds-toast-shift, 16px) * var(--dds-toast-dir, 1)),
+      0
+    );
+  }
+  /* Drag follows the pointer with no easing; release/cancel retarget. */
+  .c-toast[data-swipe='move'] {
+    transition: none;
+    transform: translate3d(
+      var(--radix-toast-swipe-move-x, 0),
+      var(--radix-toast-swipe-move-y, 0),
+      0
+    );
+  }
+  .c-toast[data-swipe='cancel'] {
+    transform: translate3d(0, 0, 0);
+  }
+  .c-toast[data-swipe='end'] {
+    transform: translate3d(
+      var(--radix-toast-swipe-end-x, 100%),
+      var(--radix-toast-swipe-end-y, 0),
+      0
+    );
+  }
+  @starting-style {
+    .c-toast[data-state='open'] {
+      opacity: 0;
+      transform: translate3d(
+        0,
+        calc(var(--dds-toast-shift, 16px) * var(--dds-toast-dir, 1)),
+        0
+      );
+    }
+  }
+
+  /*
+   * Background-sync notification — a single floating card that rises from the
+   * dock edge on enter and settles back toward it on exit. Transitions (not
+   * keyframes) so a rapid dismiss-then-reopen retargets from the live state;
+   * `@starting-style` supplies the enter-from without a mount flag.
+   */
+  .c-sync-notification {
+    transition:
+      opacity var(--duration-base) var(--ease-out),
+      transform var(--duration-base) var(--ease-out);
+    will-change: transform, opacity;
+  }
+  .c-sync-notification[data-state='open'] {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  .c-sync-notification[data-state='closed'] {
+    /* Exits are snappier than entrances. */
+    transition-duration: var(--duration-fast);
+    opacity: 0;
+    transform: translate3d(
+      0,
+      calc(var(--dds-sync-shift, 10px) * var(--dds-sync-dir, 1)),
+      0
+    );
+  }
+  @starting-style {
+    .c-sync-notification[data-state='open'] {
+      opacity: 0;
+      transform: translate3d(
+        0,
+        calc(var(--dds-sync-shift, 10px) * var(--dds-sync-dir, 1)),
+        0
+      );
+    }
+  }
+
+  /*
+   * Sync status label — the blur text-swap and the loading shimmer.
+   * The swap rides `transform` + `opacity` + `filter: blur()`; the shimmer is a
+   * clipped sweeping gradient (background-position only, paint-cheap).
+   */
+  .c-text-swap {
+    display: inline-block;
+    transform: translateY(0);
+    opacity: 1;
+    transition:
+      transform var(--text-swap-dur) var(--text-swap-ease),
+      filter var(--text-swap-dur) var(--text-swap-ease),
+      opacity var(--text-swap-dur) var(--text-swap-ease);
+    will-change: transform, filter, opacity;
+  }
+  .c-text-swap.is-exit {
+    transform: translateY(calc(var(--text-swap-translate-y) * -1));
+    filter: blur(var(--text-swap-blur));
+    opacity: 0;
+  }
+  .c-text-swap.is-enter-start {
+    transform: translateY(var(--text-swap-translate-y));
+    filter: blur(var(--text-swap-blur));
+    opacity: 0;
+    transition: none;
+  }
+
+  .c-digit-group {
+    display: inline-flex;
+    align-items: baseline;
+  }
+  .c-digit {
+    display: inline-block;
+    font-variant-numeric: tabular-nums;
+    will-change: transform, opacity, filter;
+  }
+  .c-digit-group.is-animating .c-digit {
+    animation: c-digit-pop-in var(--digit-dur) var(--digit-ease) both;
+  }
+  .c-digit-group.is-animating .c-digit[data-stagger='1'] {
+    animation-delay: var(--digit-stagger);
+  }
+  .c-digit-group.is-animating .c-digit[data-stagger='2'] {
+    animation-delay: calc(var(--digit-stagger) * 2);
+  }
+
+  /* "Icon swap" — stacked layers cross-fade in place (scale + blur). */
+  .c-icon-swap {
+    position: relative;
+    display: inline-grid;
+  }
+  .c-icon-swap .c-icon {
+    grid-area: 1 / 1;
+    transition:
+      opacity var(--icon-swap-dur) var(--icon-swap-ease),
+      filter var(--icon-swap-dur) var(--icon-swap-ease),
+      transform var(--icon-swap-dur) var(--icon-swap-ease);
+    will-change: opacity, filter, transform;
+  }
+  .c-icon-swap .c-icon:not([data-active='true']) {
+    opacity: 0;
+    filter: blur(var(--icon-swap-blur));
+    transform: scale(var(--icon-swap-start-scale));
+  }
+  .c-icon-swap .c-icon[data-active='true'] {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  /* "Success check" — fade + rotate + un-blur + bob, with the mark drawing in. */
+  .c-status-check {
+    display: inline-block;
+    transform-origin: center;
+    opacity: 0;
+    will-change: transform, opacity, filter;
+  }
+  .c-status-check svg {
+    display: block;
+    overflow: visible;
+  }
+  .c-status-check svg [data-draw] {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
+  .c-status-check[data-state='in'] {
+    animation:
+      c-check-fade var(--check-opacity-dur) var(--check-ease-out) forwards,
+      c-check-rotate var(--check-rotate-dur) var(--check-ease-out) forwards,
+      c-check-blur var(--check-blur-dur) var(--check-ease-out) forwards,
+      c-check-bob var(--check-bob-dur) var(--check-ease-bob) forwards;
+  }
+  .c-status-check[data-state='in'] svg [data-draw] {
+    animation: c-check-draw var(--check-path-dur) var(--check-ease-out)
+      var(--check-path-delay) forwards;
+  }
+
+  /*
+   * An invisible hover bridge below/above the panel fills the gap to the info
+   * icon, so moving between them never crosses a "dead zone" that closes it.
+   */
+  .c-sync-popover[data-side='top']::after,
+  .c-sync-popover[data-side='bottom']::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 16px;
+  }
+  .c-sync-popover[data-side='top']::after {
+    top: 100%;
+  }
+  .c-sync-popover[data-side='bottom']::after {
+    bottom: 100%;
+  }
+
+  .c-shimmer {
+    color: rgba(255, 255, 255, 0.5);
+    /* The base is a background *colour* so the glyphs stay legible even when
+       the highlight band has swept fully off — no invisible text. */
+    background-color: currentColor;
+    background-image: linear-gradient(
+      100deg,
+      transparent 42%,
+      rgba(255, 255, 255, 0.92) 50%,
+      transparent 58%
+    );
+    background-size: 200% 100%;
+    background-repeat: no-repeat;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: sync-shimmer var(--duration-shimmer, 2s) linear infinite;
+  }
+}
+
+@keyframes c-digit-pop-in {
+  0% {
+    transform: translate(
+      calc(var(--digit-distance) * var(--digit-dir-x)),
+      calc(var(--digit-distance) * var(--digit-dir-y))
+    );
+    opacity: 0;
+    filter: blur(var(--digit-blur));
+  }
+  100% {
+    transform: translate(0, 0);
+    opacity: 1;
+  }
+}
+@keyframes c-check-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes c-check-rotate {
+  from { transform: rotate(var(--check-rotate-from)); }
+}
+@keyframes c-check-blur {
+  from { filter: blur(var(--check-blur-from)); }
+}
+@keyframes c-check-bob {
+  from { translate: 0 var(--check-y-amount); }
+}
+@keyframes c-check-draw {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes sync-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* Reduced motion: drop the swap, the digit pop and the shimmer. */
+@media (prefers-reduced-motion: reduce) {
+  .c-text-swap {
+    transition: none !important;
+  }
+  .c-digit-group .c-digit {
+    animation: none !important;
+  }
+  .c-icon-swap .c-icon {
+    transition: none !important;
+  }
+  .c-status-check {
+    animation: none !important;
+    opacity: 1;
+  }
+  .c-status-check svg [data-draw] {
+    animation: none !important;
+    stroke-dashoffset: 0 !important;
+  }
+  .c-shimmer {
+    animation: none;
+    background: none;
+    -webkit-text-fill-color: currentColor;
+    color: rgba(255, 255, 255, 0.6);
+  }
+}
+
 /* Control elevation — a soft inset sheen + hairline drop (mode-aware). */
 :root {
   --shadow-control:
     inset 0 1px 0 0 rgb(255 255 255 / 0.24), inset 0 -1px 0 0 rgb(16 16 20 / 0.05),
     0 1px 2px 0 rgb(16 16 20 / 0.06);
+}
+
+/* transitions.dev motion tokens — "Text states swap" + "Number pop-in".
+   Drop once; every transition reads from these semantic names. */
+:root {
+  --text-swap-dur: 130ms;
+  --text-swap-translate-y: 4px;
+  --text-swap-blur: 2px;
+  --text-swap-ease: var(--ease-in-out);
+
+  --digit-dur: 450ms;
+  --digit-distance: 7px;
+  --digit-stagger: 60ms;
+  --digit-blur: 1.5px;
+  --digit-ease: cubic-bezier(0.34, 1.45, 0.64, 1);
+  --digit-dir-x: 0;
+  --digit-dir-y: 1;
+
+  --icon-swap-dur: 250ms;
+  --icon-swap-blur: 2px;
+  --icon-swap-start-scale: 0.25;
+  --icon-swap-ease: ease-in-out;
+
+  --check-opacity-dur: 500ms;
+  --check-rotate-dur: 500ms;
+  --check-rotate-from: 80deg;
+  --check-bob-dur: 500ms;
+  --check-y-amount: 40px;
+  --check-blur-dur: 500ms;
+  --check-blur-from: 10px;
+  --check-path-dur: 500ms;
+  --check-path-delay: 80ms;
+  --check-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --check-ease-bob: cubic-bezier(0.34, 1.35, 0.64, 1);
 }
 
 /* ── Fonts: Helvetica Neue is the local system family — Light 300, Regular 400,
@@ -138,15 +587,53 @@
     caret-color: var(--color-text);
     transition: background-color 9999s ease-in-out 0s;
   }
+  /* Every control shows a pointer; disabled controls say so. */
+  a,
+  button,
+  summary,
+  [role='button'],
+  [role='link'],
+  [role='menuitem'],
+  [role='tab'],
+  [role='checkbox'],
+  [role='radio'],
+  [role='switch'] {
+    cursor: pointer;
+  }
+  :disabled,
+  [aria-disabled='true'] {
+    cursor: not-allowed;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     :root {
       --duration-press: 0ms;
       --duration-fast: 80ms;
       --duration-base: 100ms;
       --duration-slow: 120ms;
+      /* Gentler, not zero: keep the opacity fade, drop the movement. */
+      --dds-pop-scale: 1;
+      --dds-toast-shift: 0px;
+      --dds-sync-shift: 0px;
+      --dds-ind-shift: 0px;
+      --dds-ind-scale: 1;
     }
   }
 }
 
 /* make Tailwind scan the package's own components for utility classes */
 @source "./components";
+
+/* DataTable search/filter toolbar: expansion + chip entrance. */
+@theme {
+  --animate-dt-expand: dt-expand var(--duration-base) var(--ease-out);
+  @keyframes dt-expand {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  --animate-dt-chip: dt-chip var(--duration-fast) var(--ease-out);
+  @keyframes dt-chip {
+    from { opacity: 0; transform: translateY(3px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}

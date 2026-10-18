@@ -1,6 +1,6 @@
 import { ArrowRightIcon, CheckIcon } from '@heroicons/react/24/solid';
 import { useEffect, useState } from 'react';
-import { Badge, Button, Card, Input } from '@caroni/design-system';
+import { Badge, Button, Card, InputText } from '@caroni/design-system';
 
 function Swatch({ label, value }: { label: string; value: string }) {
   return (
@@ -54,9 +54,9 @@ export function App() {
         </Card>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <Input placeholder="Search @tag" />
-          <Input placeholder="Amount" inputMode="decimal" />
-          <Input placeholder="Note" />
+          <InputText placeholder="Search @tag" />
+          <InputText placeholder="Amount" inputMode="decimal" />
+          <InputText placeholder="Note" />
         </div>
 
         <div className="flex flex-wrap gap-2">
