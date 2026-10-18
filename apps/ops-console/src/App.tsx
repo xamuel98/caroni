@@ -1,24 +1,36 @@
-import { Badge, Button, Card } from '@caroni/design-system';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { RequireAbility } from './auth/RequireAbility';
+import { AppShell } from './components/AppShell';
+import { createQueryClient } from './lib/query-client';
+import { DashboardPage } from './routes/DashboardPage';
+import { ForbiddenPage } from './routes/ForbiddenPage';
+import { KycQueuePage } from './routes/KycQueuePage';
+import { NotFoundPage } from './routes/NotFoundPage';
+
+const queryClient = createQueryClient();
 
 export function App() {
   return (
-    <div className="min-h-screen bg-bg text-text">
-      <div className="mx-auto flex max-w-5xl flex-col gap-6 p-8">
-        <header className="flex items-center justify-between">
-          <h1 className="font-display text-lg font-medium tracking-tight">Caroni · Operations</h1>
-          <Badge variant="accent">Maker-checker</Badge>
-        </header>
-        <Card>
-          <h2 className="text-sm font-medium text-text-secondary">KYC queue</h2>
-          <p className="mt-1 text-[13px] text-text-secondary">Scaffold only — wired in M3.</p>
-          <div className="mt-4 flex gap-2">
-            <Button size="sm">Review</Button>
-            <Button size="sm" variant="secondary">
-              Escalate
-            </Button>
-          </div>
-        </Card>
-      </div>
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <AppShell>
+          <Routes>
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route
+              path="/kyc"
+              element={
+                <RequireAbility permission="ops_kyc.kyc_case.view">
+                  <KycQueuePage />
+                </RequireAbility>
+              }
+            />
+            <Route path="/forbidden" element={<ForbiddenPage />} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </AppShell>
+      </BrowserRouter>
+    </QueryClientProvider>
   );
 }

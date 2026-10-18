@@ -4,4 +4,13 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  server: {
+    port: 5173,
+    strictPort: true,
+    // Proxy API + auth to the BFF so cookies are same-origin in dev.
+    proxy: {
+      '/api': { target: 'http://localhost:3100' },
+      '/auth': { target: 'http://localhost:3100' },
+    },
+  },
 });
