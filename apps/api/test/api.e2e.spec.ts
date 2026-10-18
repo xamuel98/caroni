@@ -1,5 +1,6 @@
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { AbilitiesResponseSchema } from '@caroni/shared-types';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { AppModule } from '../src/app.module';
@@ -58,6 +59,25 @@ describe('API (e2e)', () => {
       roles: ['ops:kyc_analyst'],
     });
     expect(res.body.id).toBeUndefined();
+  });
+
+  it('returns abilities + grants for the authenticated session', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/api/session/abilities')
+      .set('Cookie', cookie)
+      .expect(200);
+
+    const parsed = AbilitiesResponseSchema.parse(res.body);
+    expect(parsed.grants).toContain('ops_kyc.kyc_case.view');
+    expect(parsed.abilities.map((a) => a.permission_id)).toContain('ops_kyc.kyc_case.view');
+    expect(parsed.abilities.map((a) => a.permission_id)).not.toContain(
+      'ops_transfers.transfer.reverse',
+    );
+    expect(parsed.branchScope).toEqual([]);
+  });
+
+  it('returns 401 for abilities without a session', async () => {
+    await request(app.getHttpServer()).get('/api/session/abilities').expect(401);
   });
 
   it('returns 401 on a guarded route without a session', async () => {
