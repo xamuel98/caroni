@@ -5,6 +5,7 @@ import { DependencyError, UnauthorizedError } from '../common/errors';
 import { flowCookieOptions, parseCookie, sessionCookieOptions } from '../common/cookies';
 import type { Env } from '../config/env';
 import { signFlow, verifyFlow } from './flow-cookie';
+import { buildEndSessionUrl } from './logout';
 import { createPkce, randomId } from './oidc';
 import { OidcService } from './oidc.service';
 import { SESSION_STORE, type SessionRecord, type SessionStore } from './session.store';
@@ -50,6 +51,8 @@ export class AuthService {
 
     const idToken = await this.exchangeCode(code, flow.verifier);
     const claims = await this.oidc.verifyIdToken(idToken, flow.nonce);
+
+    // Roles come from the verified id_token (ThunderID RBAC → `roles` claim).
     if (claims.roles.length === 0) {
       this.logger.warn(`User ${claims.sub} signed in with no roles — all decisions will deny`);
     }
@@ -59,6 +62,7 @@ export class AuthService {
       displayName: claims.name ?? claims.email ?? claims.sub,
       email: claims.email,
       roles: claims.roles,
+      idToken,
       ttlSeconds: this.config.get('SESSION_TTL_SECONDS', { infer: true }),
     });
   }
@@ -74,9 +78,34 @@ export class AuthService {
     return session;
   }
 
-  async logout(cookieHeader: string | undefined): Promise<void> {
-    const id = parseCookie(cookieHeader, this.sessionCookie().name);
-    if (id) await this.sessions.delete(id);
+  /**
+   * Ends the app session AND the IdP's SSO session (RP-initiated logout), then
+   * returns the browser redirect. Without the IdP step the app would be
+   * immediately signed back in via SSO. Falls back to the app redirect if the
+   * IdP doesn't advertise an end-session endpoint.
+   */
+  async logoutAndEndSession(cookieHeader: string | undefined): Promise<string> {
+    const session = await this.sessionFromCookie(cookieHeader);
+    if (session) await this.sessions.delete(session.id);
+
+    const postLogoutRedirectUri = this.config.get('POST_LOGOUT_REDIRECT_URI', { infer: true });
+    try {
+      const endpoint = await this.oidc.endSessionEndpoint();
+      if (endpoint) {
+        return buildEndSessionUrl(endpoint, {
+          clientId: this.config.get('THUNDER_CLIENT_ID', { infer: true }),
+          postLogoutRedirectUri,
+          idTokenHint: session?.idToken,
+        });
+      }
+    } catch (err) {
+      this.logger.warn(
+        `End-session endpoint unavailable; redirecting to the app: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
+    return postLogoutRedirectUri;
   }
 
   sessionCookie(): { name: string; options: CookieOptions } {

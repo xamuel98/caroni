@@ -9,11 +9,12 @@ interface SessionRow {
   display_name: string;
   email: string | null;
   roles: string[];
+  id_token: string | null;
   created_at: Date;
   expires_at: Date;
 }
 
-const COLUMNS = 'id, user_id, display_name, email, roles, created_at, expires_at';
+const COLUMNS = 'id, user_id, display_name, email, roles, id_token, created_at, expires_at';
 
 /** Durable, multi-instance session store. Requires the `session` table (migrations). */
 export class PostgresSessionStore implements SessionStore, OnModuleDestroy {
@@ -23,8 +24,8 @@ export class PostgresSessionStore implements SessionStore, OnModuleDestroy {
 
   async create(input: CreateSessionInput): Promise<SessionRecord> {
     const { rows } = await this.pool.query<SessionRow>(
-      `INSERT INTO session (id, user_id, display_name, email, roles, expires_at)
-       VALUES ($1, $2, $3, $4, $5, now() + make_interval(secs => $6))
+      `INSERT INTO session (id, user_id, display_name, email, roles, id_token, expires_at)
+       VALUES ($1, $2, $3, $4, $5, $6, now() + make_interval(secs => $7))
        RETURNING ${COLUMNS}`,
       [
         randomId(32),
@@ -32,6 +33,7 @@ export class PostgresSessionStore implements SessionStore, OnModuleDestroy {
         input.displayName,
         input.email ?? null,
         input.roles,
+        input.idToken ?? null,
         input.ttlSeconds,
       ],
     );
@@ -73,6 +75,7 @@ function mapRow(row: SessionRow): SessionRecord {
     displayName: row.display_name,
     email: row.email ?? undefined,
     roles: row.roles,
+    idToken: row.id_token ?? undefined,
     createdAt: row.created_at,
     expiresAt: row.expires_at,
   };

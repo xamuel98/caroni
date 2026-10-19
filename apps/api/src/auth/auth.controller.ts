@@ -60,9 +60,15 @@ export class AuthController {
 
   @Post('logout')
   async logout(@Req() req: Request, @Res() res: Response): Promise<void> {
-    await this.auth.logout(req.headers.cookie);
+    const url = await this.auth.logoutAndEndSession(req.headers.cookie);
     res.clearCookie(this.auth.sessionCookie().name, { path: '/' });
-    res.redirect(this.auth.postLoginRedirect());
+    res.redirect(url);
+  }
+
+  /** Where the IdP returns after logout; bounce to the app with a clear marker. */
+  @Get('logged-out')
+  loggedOut(@Res() res: Response): void {
+    res.redirect(withParams(this.auth.postLoginRedirect(), { signed_out: '1' }));
   }
 }
 

@@ -5,7 +5,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "node dist/main.js",
-    "dev": "tsc -p tsconfig.json --watch --preserveWatchOutput",
+    "dev": "nest start --watch",
     "test": "vitest run",
     "test:watch": "vitest",
     "db:migrate": "node dist/db/migrate.js",
@@ -27,6 +27,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@nestjs/cli": "^10",
     "@nestjs/testing": "^10.4.22",
     "@swc/core": "^1.16.18",
     "@types/express": "^4.17.21",
