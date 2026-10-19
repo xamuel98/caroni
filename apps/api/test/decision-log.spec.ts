@@ -27,7 +27,7 @@ describe('decision logging (module wiring)', () => {
 
     const moduleRef = await Test.createTestingModule({
       imports: [
-        ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
+        ConfigModule.forRoot({ isGlobal: true, validate: validateEnv, ignoreEnvFile: true }),
         DatabaseModule,
         AuthorizationModule,
       ],

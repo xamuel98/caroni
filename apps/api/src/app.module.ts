@@ -9,7 +9,13 @@ import { OpsKycController } from './ops/ops-kyc.controller';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, cache: true, validate: validateEnv }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      cache: true,
+      validate: validateEnv,
+      // Tests must be hermetic: never let a developer's apps/api/.env leak in.
+      ignoreEnvFile: process.env.NODE_ENV === 'test',
+    }),
     DatabaseModule,
     AuthorizationModule,
     AuthModule,

@@ -53,6 +53,22 @@ const EnvSchema = z
       .enum(['true', 'false'])
       .optional()
       .transform((v) => (v === undefined ? undefined : v === 'true')),
+
+    /**
+     * DEV ONLY. Comma-separated roles granted when the id_token carries none,
+     * so a local IdP without role plumbing still works. Rejected in production.
+     */
+    AUTH_DEV_ROLE_OVERRIDE: z
+      .string()
+      .optional()
+      .transform((v) =>
+        v
+          ? v
+              .split(',')
+              .map((s) => s.trim())
+              .filter(Boolean)
+          : [],
+      ),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV === 'production' && env.SESSION_SECRET === DEV_SESSION_SECRET) {
@@ -60,6 +76,13 @@ const EnvSchema = z
         code: z.ZodIssueCode.custom,
         path: ['SESSION_SECRET'],
         message: 'must be set to a strong secret in production',
+      });
+    }
+    if (env.NODE_ENV === 'production' && env.AUTH_DEV_ROLE_OVERRIDE.length > 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['AUTH_DEV_ROLE_OVERRIDE'],
+        message: 'must not be set in production',
       });
     }
   });
