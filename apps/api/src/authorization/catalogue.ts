@@ -1,4 +1,4 @@
-import type { Ability } from '@caroni/shared-types';
+import type { Ability, AbilityResult } from '@caroni/shared-types';
 
 /**
  * Compiles the permission glossary + role assignments into the data the API
@@ -21,18 +21,85 @@ export function compileCatalogue(csv: string, yaml: string): CompiledCatalogue {
   return { abilities: sorted, roleGrants };
 }
 
-/** The catalogue entries granted to a caller holding `roles` (plus the grant list). */
-export function abilitiesForRoles(
+/** The flat grant list plus the visible resources grouped with per-action decisions. */
+export interface CompiledAbilities {
+  grants: string[];
+  results: AbilityResult[];
+}
+
+/**
+ * Resolves the abilities for a caller holding `roles`. Only resources the
+ * caller can do *something* on are returned; within those, every action is
+ * reported (granted → ALLOW, otherwise DENY) so the UI can render unavailable
+ * actions without leaking unrelated modules.
+ */
+export function compileAbilities(
   roles: string[],
   catalogue: CompiledCatalogue,
-): { grants: string[]; abilities: Ability[] } {
+): CompiledAbilities {
+  const granted = grantSet(roles, catalogue);
+  const grants = [...granted].sort();
+
+  const visibleResources = new Set(
+    catalogue.abilities
+      .filter((ability) => granted.has(ability.permission_id))
+      .map(resourceKey),
+  );
+
+  const grouped = new Map<string, AbilityResult>();
+  for (const ability of catalogue.abilities) {
+    const key = resourceKey(ability);
+    if (!visibleResources.has(key)) continue;
+
+    let result = grouped.get(key);
+    if (!result) {
+      result = {
+        resource: { app: ability.app, module: ability.module, kind: ability.resource_kind },
+        actions: {},
+      };
+      grouped.set(key, result);
+    }
+
+    const allowed = granted.has(ability.permission_id);
+    result.actions[ability.action] = {
+      effect: allowed ? 'EFFECT_ALLOW' : 'EFFECT_DENY',
+      permissionId: ability.permission_id,
+      mode: allowed ? 'show' : 'hide',
+      label: ability.label,
+      ...(ability.surface ? { surface: ability.surface } : {}),
+      ...(allowed ? {} : { reason: `role does not grant ${ability.permission_id}` }),
+    };
+  }
+
+  const results = [...grouped.values()]
+    .map((result) => ({ ...result, actions: sortKeys(result.actions) }))
+    .sort((a, b) => resourceKey(a.resource).localeCompare(resourceKey(b.resource)));
+
+  return { grants, results };
+}
+
+function grantSet(roles: string[], catalogue: CompiledCatalogue): Set<string> {
   const granted = new Set<string>();
   for (const role of roles) {
     for (const permissionId of catalogue.roleGrants[role] ?? []) granted.add(permissionId);
   }
-  const grants = [...granted].sort();
-  const abilities = catalogue.abilities.filter((a) => granted.has(a.permission_id));
-  return { grants, abilities };
+  return granted;
+}
+
+function resourceKey(resource: {
+  app: string;
+  module: string;
+  resource_kind?: string;
+  kind?: string;
+}): string {
+  const kind = resource.kind ?? resource.resource_kind ?? '';
+  return `${resource.app}/${resource.module}/${kind}`;
+}
+
+function sortKeys<T>(record: Record<string, T>): Record<string, T> {
+  const sorted: Record<string, T> = {};
+  for (const key of Object.keys(record).sort()) sorted[key] = record[key]!;
+  return sorted;
 }
 
 export function parseGlossaryCsv(csv: string): Ability[] {
