@@ -524,6 +524,25 @@ cards:
       - Action gated by ops_roles.role.update
     dependencies: [M5-5, M1-6]
 
+  - key: M5-7
+    name: Instance-scoped decisions endpoint (batched)
+    list: Backlog
+    labels: [authz, backend, api]
+    summary: Per-row ABAC verdicts for detail/list screens, in one call.
+    current_state: Not started (M1-4 abilities are resource-kind scoped only).
+    requirements: >
+      POST /api/authorization/decisions taking { resource: { kind, id, attrs }, actions[] }
+      (or a batch of such), returning per-action effect + obligations (four-eyes,
+      tier/authority limits, branch scope). Enforce branch scope and return matched
+      policy + reason per action. No N+1: batch the rows so a list screen resolves
+      all its rows in a single round-trip.
+    acceptance:
+      - Batched request returns one verdict per (resource, action)
+      - Obligations (dual-control, limits) surfaced, not just allow/deny
+      - Results mirror the EffectSchema/ActionDecision shape used by abilities
+      - Guarded by session + a base permission; every call written to decision_log
+    dependencies: [M5-2, M1-5]
+
   # ══ M6 — Real-time & audit ════════════════════════════════════════════════
   - key: M6-1
     name: SSE stream — consumer (transfer.updated)

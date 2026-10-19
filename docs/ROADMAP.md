@@ -45,7 +45,7 @@ hide/disable), but the **server is always the source of truth**.
 | M2 | Transfer happy path | Double-entry ledger, idempotency, history | ⬜ backlog |
 | M3 | KYC & tiers | Verification → tier → ABAC limits; the "held → verify → complete" spine demo | ⬜ |
 | M4 | Exceptions | Held/failed → cases, resolve/retry/reverse, dual-control (four-eyes) | ⬜ |
-| M5 | Policy depth | Full Rego rbac/abac/pbac + authorization-matrix suite + role editor | ⬜ |
+| M5 | Policy depth | Full Rego rbac/abac/pbac + authorization-matrix suite + role editor + **instance-scoped decisions API** | ⬜ |
 | M6 | Real-time & audit | SSE streams, audit UI | ⬜ |
 | M7 | Multi-tenancy | Branch scoping, per-branch policy, isolation tests | ⬜ |
 | M8 | Polish & deploy | Design-system completion, a11y, perf, CI, prod | 🔶 (design system built early) |
@@ -74,8 +74,11 @@ hide/disable), but the **server is always the source of truth**.
   (JWKS, iss/aud/nonce/exp).
 - **M1-5** Guard + decisions ✅ — `@RequirePermission()`, 403 with reasons/obligations, and a
   **`decision_log`** audit row per decision.
-- **M1-3** consumer OTP login ⬜ · **M1-4** `GET /api/session/abilities` ⬜ ·
-  **M1-6** ops-console shell ⬜ · **M1-7** deploy ⬜.
+- **M1-4** abilities contract ✅ — catalogue compiler + `GET /api/session/abilities` returning a
+  **Fortis-style grouped payload** (`results[]`: resource → per-action `{effect, permissionId,
+  mode, reason}`, plus a flat `grants` list). Kind-scoped only; **instance-scoped** verdicts
+  (per-row ABAC + obligations) land in **M5-7**.
+- **M1-3** consumer OTP login ⬜ · **M1-6** ops-console shell ⬜ · **M1-7** deploy ⬜.
 
 **Cross-cutting (from the M1 hardening pass):** RFC 7807 problem+json, typed domain errors,
 `X-Correlation-Id`, helmet/CORS, graceful shutdown, Nest `Logger`, forward-only migration runner,
@@ -100,6 +103,8 @@ Vite stubs.
 - CSRF double-submit tokens for mutations.
 - `decision_log` retention / partitioning.
 - Abilities compile + `role_permissions` push to OPA on change (M5-5).
+- Instance-scoped decisions (per-row ABAC + obligations) — planned as M5-7; abilities stay
+  resource-kind scoped for now.
 - ThunderID email-MFA provider (removes the dev workaround).
 - api + ThunderID not yet in compose; no CI workflow yet (M8-7).
 
