@@ -18,11 +18,28 @@ export function AppShell({ children }: { children: ReactNode }) {
   const params = new URLSearchParams(window.location.search);
   const signInError = params.get('error');
   const signInReason = params.get('reason');
+  const signedOut = params.get('signed_out');
   const unauthorized = isUnauthorized(session.error);
 
   useEffect(() => {
-    if (unauthorized && !signInError) signIn();
-  }, [unauthorized, signInError]);
+    if (unauthorized && !signInError && !signedOut) signIn();
+  }, [unauthorized, signInError, signedOut]);
+
+  if (signedOut) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-bg p-6">
+        <Card className="w-full max-w-md">
+          <h1 className="text-sm font-medium text-text">Signed out</h1>
+          <p className="mt-1 text-[13px] text-text-secondary">
+            You’ve been signed out and your identity provider session was ended.
+          </p>
+          <Button className="mt-4" size="sm" onClick={() => signIn()}>
+            Sign in
+          </Button>
+        </Card>
+      </div>
+    );
+  }
 
   if (unauthorized && signInError) {
     return (

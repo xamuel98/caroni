@@ -5,14 +5,20 @@ import { DependencyError } from '../common/errors';
 import type { Env } from '../config/env';
 import { verifyIdToken, type IdTokenClaims } from './id-token';
 
+interface DiscoveryDocument {
+  jwks_uri?: string;
+  end_session_endpoint?: string;
+}
+
 /**
- * Wraps id_token verification with the issuer's JWKS (discovered once and
- * cached). Keys are re-fetched by `jose` on rotation.
+ * OIDC metadata + id_token verification. Discovery is fetched once and cached;
+ * `jose` re-fetches signing keys on rotation.
  */
 @Injectable()
 export class OidcService {
   private readonly logger = new Logger(OidcService.name);
   private keySet?: JWTVerifyGetKey;
+  private discovery?: DiscoveryDocument;
 
   constructor(private readonly config: ConfigService<Env, true>) {}
 
@@ -24,31 +30,35 @@ export class OidcService {
     });
   }
 
+  /** The IdP's RP-initiated logout endpoint, or null if it doesn't advertise one. */
+  async endSessionEndpoint(): Promise<string | null> {
+    return (await this.discoveryDocument()).end_session_endpoint ?? null;
+  }
+
   private async keys(): Promise<JWTVerifyGetKey> {
     if (this.keySet) return this.keySet;
     const explicit = this.config.get('THUNDER_JWKS_URL', { infer: true });
-    const jwksUrl = explicit ?? (await this.discoverJwksUri());
+    const jwksUrl = explicit ?? (await this.discoveryDocument()).jwks_uri;
+    if (!jwksUrl) throw new DependencyError('OIDC discovery document is missing jwks_uri');
     this.logger.log(`Using JWKS at ${jwksUrl}`);
     this.keySet = createRemoteJWKSet(new URL(jwksUrl));
     return this.keySet;
   }
 
-  private async discoverJwksUri(): Promise<string> {
+  private async discoveryDocument(): Promise<DiscoveryDocument> {
+    if (this.discovery) return this.discovery;
     const issuer = this.config.get('THUNDER_ISSUER', { infer: true });
-    const discoveryUrl = `${issuer.replace(/\/$/, '')}/.well-known/openid-configuration`;
+    const url = `${issuer.replace(/\/$/, '')}/.well-known/openid-configuration`;
+
     let res: Response;
     try {
-      res = await fetch(discoveryUrl);
+      res = await fetch(url);
     } catch (err) {
-      throw new DependencyError(`Failed to reach OIDC discovery at ${discoveryUrl}`, err);
+      throw new DependencyError(`Failed to reach OIDC discovery at ${url}`, err);
     }
-    if (!res.ok) {
-      throw new DependencyError(`OIDC discovery failed (${res.status})`);
-    }
-    const doc = (await res.json()) as { jwks_uri?: string };
-    if (!doc.jwks_uri) {
-      throw new DependencyError('OIDC discovery document is missing jwks_uri');
-    }
-    return doc.jwks_uri;
+    if (!res.ok) throw new DependencyError(`OIDC discovery failed (${res.status})`);
+
+    this.discovery = (await res.json()) as DiscoveryDocument;
+    return this.discovery;
   }
 }

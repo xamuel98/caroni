@@ -22,8 +22,10 @@ const EnvSchema = z
           .map((o) => o.trim())
           .filter(Boolean),
       ),
-    /** Where the browser lands after a successful login / logout. */
+    /** Where the browser lands after a successful login. */
     POST_LOGIN_REDIRECT_URI: z.string().url().default('http://localhost:5173'),
+    /** Where the IdP returns after RP-initiated logout (must be registered). */
+    POST_LOGOUT_REDIRECT_URI: z.string().url().default('http://localhost:3100/auth/logged-out'),
 
     // ── ThunderID (OIDC) ───────────────────────────────────────────────────
     THUNDER_ISSUER: z.string().url().default('https://localhost:8090'),

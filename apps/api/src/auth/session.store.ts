@@ -7,6 +7,8 @@ export interface SessionRecord {
   displayName: string;
   email?: string;
   roles: string[];
+  /** Kept for RP-initiated logout (id_token_hint). */
+  idToken?: string;
   createdAt: Date;
   expiresAt: Date;
 }
@@ -16,6 +18,7 @@ export interface CreateSessionInput {
   displayName: string;
   email?: string;
   roles: string[];
+  idToken?: string;
   ttlSeconds: number;
 }
 
@@ -42,6 +45,7 @@ export class InMemorySessionStore implements SessionStore {
       displayName: input.displayName,
       email: input.email,
       roles: input.roles,
+      idToken: input.idToken,
       createdAt: new Date(now),
       expiresAt: new Date(now + input.ttlSeconds * 1000),
     };
