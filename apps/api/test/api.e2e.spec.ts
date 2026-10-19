@@ -68,11 +68,18 @@ describe('API (e2e)', () => {
       .expect(200);
 
     const parsed = AbilitiesResponseSchema.parse(res.body);
+    expect(parsed.requestId).toBeTruthy();
     expect(parsed.grants).toContain('ops_kyc.kyc_case.view');
-    expect(parsed.abilities.map((a) => a.permission_id)).toContain('ops_kyc.kyc_case.view');
-    expect(parsed.abilities.map((a) => a.permission_id)).not.toContain(
-      'ops_transfers.transfer.reverse',
+
+    const kycCase = parsed.results.find(
+      (r) => r.resource.module === 'ops_kyc' && r.resource.kind === 'kyc_case',
     );
+    expect(kycCase?.actions.view).toMatchObject({
+      effect: 'EFFECT_ALLOW',
+      mode: 'show',
+      permissionId: 'ops_kyc.kyc_case.view',
+    });
+    expect(parsed.results.some((r) => r.resource.module === 'ops_transfers')).toBe(false);
     expect(parsed.branchScope).toEqual([]);
   });
 
