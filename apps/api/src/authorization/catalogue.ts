@@ -173,11 +173,23 @@ export function parseRolesYaml(yaml: string): Record<string, string[]> {
 
 function validate(abilities: Ability[], roleGrants: Record<string, string[]>): void {
   const seen = new Set<string>();
+  const seenActions = new Set<string>();
   for (const ability of abilities) {
     if (seen.has(ability.permission_id)) {
       throw new Error(`duplicate permission_id in glossary: ${ability.permission_id}`);
     }
     seen.add(ability.permission_id);
+
+    // Abilities are grouped by resource + action, so two entries sharing an
+    // action on the same resource kind would silently collapse into one.
+    const actionKey = `${ability.app}/${ability.module}/${ability.resource_kind}/${ability.action}`;
+    if (seenActions.has(actionKey)) {
+      throw new Error(
+        `duplicate action "${ability.action}" on ${ability.module}/${ability.resource_kind} (${ability.permission_id})`,
+      );
+    }
+    seenActions.add(actionKey);
+
     if (!CAPABILITIES.has(ability.capability)) {
       throw new Error(`${ability.permission_id}: invalid capability "${ability.capability}"`);
     }

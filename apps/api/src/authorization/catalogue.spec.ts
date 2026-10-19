@@ -36,6 +36,14 @@ describe('catalogue compiler', () => {
     expect(() => compileCatalogue(csv, '')).toThrow(/invalid capability/);
   });
 
+  it('rejects two entries sharing a resource action', () => {
+    const csv =
+      'permission_id,app,module,resource_kind,section,action,capability,label,surface\n' +
+      'm.r.view,ops,m,r,s,view,visible,View,/r\n' +
+      'm.r.preview,ops,m,r,s,view,visible,Preview,/r\n';
+    expect(() => compileCatalogue(csv, '')).toThrow(/duplicate action/);
+  });
+
   it('stays in sync with the committed generated data', () => {
     const compiled = compileCatalogue(read('permission-glossary.csv'), read('roles.yaml'));
     expect(compiled.abilities).toEqual(CATALOGUE);
