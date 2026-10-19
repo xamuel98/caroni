@@ -1,7 +1,7 @@
 import { Badge, Button, Card } from '@caroni/design-system';
 import { useEffect, type ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
-import { signIn } from '../auth/sign-in';
+import { redirectToSignIn, signIn } from '../auth/sign-in';
 import { useCan } from '../auth/useCan';
 import { isUnauthorized } from '../lib/api';
 import { NAV } from '../lib/nav';
@@ -22,7 +22,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const unauthorized = isUnauthorized(session.error);
 
   useEffect(() => {
-    if (unauthorized && !signInError && !signedOut) signIn();
+    if (unauthorized && !signInError && !signedOut) redirectToSignIn();
   }, [unauthorized, signInError, signedOut]);
 
   if (signedOut) {

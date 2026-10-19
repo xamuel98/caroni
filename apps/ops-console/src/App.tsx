@@ -17,7 +17,14 @@ export function App() {
         <AppShell>
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route
+              path="/dashboard"
+              element={
+                <RequireAbility permission="ops_dashboard.ops_dashboard.view">
+                  <DashboardPage />
+                </RequireAbility>
+              }
+            />
             <Route
               path="/kyc"
               element={
