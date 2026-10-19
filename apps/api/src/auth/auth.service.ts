@@ -7,7 +7,6 @@ import type { Env } from '../config/env';
 import { signFlow, verifyFlow } from './flow-cookie';
 import { createPkce, randomId } from './oidc';
 import { OidcService } from './oidc.service';
-import { resolveRoles } from './roles';
 import { SESSION_STORE, type SessionRecord, type SessionStore } from './session.store';
 
 @Injectable()
@@ -52,16 +51,8 @@ export class AuthService {
     const idToken = await this.exchangeCode(code, flow.verifier);
     const claims = await this.oidc.verifyIdToken(idToken, flow.nonce);
 
-    const { roles, usedOverride } = resolveRoles(
-      claims.roles,
-      this.config.get('AUTH_DEV_ROLE_OVERRIDE', { infer: true }),
-      this.config.get('NODE_ENV', { infer: true }) === 'production',
-    );
-    if (usedOverride) {
-      this.logger.warn(
-        `DEV role override applied for ${claims.sub}: ${roles.join(', ')} — never enable AUTH_DEV_ROLE_OVERRIDE outside development`,
-      );
-    } else if (roles.length === 0) {
+    // Roles come from the verified id_token (ThunderID RBAC → `roles` claim).
+    if (claims.roles.length === 0) {
       this.logger.warn(`User ${claims.sub} signed in with no roles — all decisions will deny`);
     }
 
@@ -69,7 +60,7 @@ export class AuthService {
       userId: claims.sub,
       displayName: claims.name ?? claims.email ?? claims.sub,
       email: claims.email,
-      roles,
+      roles: claims.roles,
       ttlSeconds: this.config.get('SESSION_TTL_SECONDS', { infer: true }),
     });
   }

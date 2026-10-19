@@ -1,4 +1,4 @@
-import { Badge, Button } from '@caroni/design-system';
+import { Badge, Button, Card } from '@caroni/design-system';
 import { useEffect, type ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
 import { signIn } from '../auth/sign-in';
@@ -13,12 +13,35 @@ export function AppShell({ children }: { children: ReactNode }) {
   const session = useSession();
   const can = useCan();
 
-  useEffect(() => {
-    if (isUnauthorized(session.error)) signIn();
-  }, [session.error]);
+  // The API bounces failed sign-ins back to the app with ?error=… so we can
+  // explain what happened instead of immediately retrying (which would loop).
+  const params = new URLSearchParams(window.location.search);
+  const signInError = params.get('error');
+  const signInReason = params.get('reason');
+  const unauthorized = isUnauthorized(session.error);
 
-  if (isUnauthorized(session.error)) return <PageLoader label="Redirecting to sign in…" />;
-  if (session.isPending) return <PageLoader label="Signing in…" />;
+  useEffect(() => {
+    if (unauthorized && !signInError) signIn();
+  }, [unauthorized, signInError]);
+
+  if (unauthorized && signInError) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-bg p-6">
+        <Card className="w-full max-w-md">
+          <h1 className="text-sm font-medium text-text">Sign-in failed</h1>
+          <p className="mt-1 text-[13px] text-text-secondary">
+            {signInReason ?? 'The identity provider did not complete the sign-in.'}
+          </p>
+          <Button className="mt-4" size="sm" onClick={() => signIn()}>
+            Try again
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
+  if (unauthorized) return <PageLoader label="Redirecting to sign in..." />;
+  if (session.isPending) return <PageLoader label="Signing in..." />;
   if (session.error) return <PageError error={session.error} onRetry={() => session.refetch()} />;
 
   const items = NAV.filter((item) => can(item.permission));
