@@ -101,6 +101,11 @@ Vite stubs.
 ## Known gaps (deliberately deferred)
 
 - CSRF double-submit tokens for mutations.
+- **Session expiry is reactive.** The server enforces expiry (TTL → 401 on read, plus a janitor and
+  cookie `maxAge`), but the UI only re-authenticates when a request 401s (or a focus refetch
+  triggers one). There's no idle timer or pre-emptive warning, and the 401 is generic
+  (`unauthorized`) — `get()` returns `null` for both unknown and expired sessions — so the user
+  is silently bounced to the IdP with no distinct "your session expired, sign in again" prompt.
 - `decision_log` retention / partitioning.
 - Abilities compile + `role_permissions` push to OPA on change (M5-5).
 - Instance-scoped decisions (per-row ABAC + obligations) — planned as M5-7; abilities stay
