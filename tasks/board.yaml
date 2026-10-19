@@ -527,7 +527,7 @@ cards:
   - key: M5-7
     name: Instance-scoped decisions endpoint (batched)
     list: Backlog
-    labels: [authz, backend, api]
+    labels: [authz, backend]
     summary: Per-row ABAC verdicts for detail/list screens, in one call.
     current_state: Not started (M1-4 abilities are resource-kind scoped only).
     requirements: >
